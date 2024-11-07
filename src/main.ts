@@ -27,7 +27,7 @@ async function bootstrap() {
     secret: envs.JWT_SECRET,
   });
 
-  await app.listen(envs.POST ?? 5000, "0.0.0.0")
+  await app.listen(5000, "0.0.0.0")
   for (const key in envs) {
     const element = envs[key];
     if (!element) {
@@ -37,19 +37,6 @@ async function bootstrap() {
     }
   }
   Logger.log(`Application is running on: ${await app.getUrl()}`)
-  Logger.warn(`Server sleep mode is ${envs.SERVER_SLEEP === "true" ? "ON" : "OFF"}`)
-  let count = 0
-  if (envs.SERVER_SLEEP === "true") {
-    setInterval(() => {
-      fetch("https://skylight-server-api-development.onrender.com/v1")
-        .then((res) => {
-          count++
-          Logger.log(`hit api ${count} times`)
-        }).catch((e) => {
-          Logger.error("Api hit error", e)
-        })
-    }, 1000 * 60 * 5)
-  }
 }
 
 bootstrap();

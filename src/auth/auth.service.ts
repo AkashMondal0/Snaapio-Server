@@ -43,11 +43,11 @@ export class AuthService {
       id: user.id,
       email: user.email,
       name: user.name
-    }, { expiresIn: '1d' })
+    }, { expiresIn: '30d' })
 
     response.setCookie('sky.inc-token', accessToken, {
-      path: configuration().COOKIE_PATH,
-      maxAge: configuration().COOKIE_MAX_AGE, // 30 days  
+      path: "/",
+      maxAge: 1000 * 60 * 60 * 24 * 30,
       httpOnly: true,
       priority: "medium",
       sameSite: "lax",
@@ -80,11 +80,11 @@ export class AuthService {
       email: newUser.email,
       name: newUser.name,
       id: newUser.id,
-    }, { expiresIn: configuration().JWT_EXPIRATION })
+    }, { expiresIn: '30d' })
 
     response.setCookie('sky.inc-token', accessToken, {
-      path: configuration().COOKIE_PATH,
-      maxAge: configuration().COOKIE_MAX_AGE, // 30 days  
+      path: '/',
+      maxAge: 1000 * 60 * 60 * 24 * 30,
       httpOnly: true,
       priority: "medium",
       sameSite: "lax",
