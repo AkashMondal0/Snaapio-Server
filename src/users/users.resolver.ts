@@ -10,7 +10,8 @@ import { UpdateUsersInput } from './dto/update-users.input';
 import { GqlRolesGuard } from 'src/auth/guard/Gql.roles.guard';
 import { Roles } from 'src/auth/SetMetadata';
 import { Role } from 'src/lib/types';
-
+import { Throttle } from '@nestjs/throttler';
+import { GqlThrottlerGuard } from 'src/auth/guard/GqlThrottler.Guard';
 @Resolver(() => Users)
 export class UsersResolver {
   constructor(private readonly usersService: UsersService) { }
@@ -31,5 +32,15 @@ export class UsersResolver {
   @Mutation(() => Author, { name: 'updateUserProfile' })
   updateUserProfile(@SessionUserGraphQl() user: Author, @Args('UpdateUsersInput') updateUsersInput: UpdateUsersInput) {
     return this.usersService.updateProfile(user, updateUsersInput);
+  }
+
+  // example of rate limiting
+  // @UseGuards(GqlAuthGuard)
+  @UseGuards(GqlThrottlerGuard)
+  @Throttle({ default: { limit: 1, ttl: 60000 } })
+  @Query(() => String, { name: 'test' })
+  Test(@SessionUserGraphQl() user: Author) {
+    // console.log(user);
+    return "Test";
   }
 }

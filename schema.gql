@@ -205,6 +205,7 @@ type Highlight {
 type Query {
   findUserProfile(username: String!): Profile!
   findUsersByKeyword(keyword: String!): [Author!]!
+  test: String!
   feedTimelineConnection(limitAndOffset: GraphQLPageQuery!): [Post!]!
   findAllPosts(findAllPosts: GraphQLPageQuery!): [Post!]!
   findOnePost(id: String!): Post!
