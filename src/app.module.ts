@@ -20,7 +20,7 @@ import { FriendshipModule } from './friendship/friendship.module';
 import { EventsModule } from './event/event.module';
 import { NotificationModule } from './notification/notification.module';
 import { StoryModule } from './story/story.module';
-
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
@@ -31,6 +31,7 @@ import { StoryModule } from './story/story.module';
       driver: ApolloDriver,
       autoSchemaFile: 'schema.gql',
       playground: false,
+      context: (req: any, res: any) => ({ req, res }),
       plugins: [ApolloServerPluginLandingPageLocalDefault()],
     }),
     ConfigModule.forRoot({
@@ -38,6 +39,7 @@ import { StoryModule } from './story/story.module';
       isGlobal: true,
       envFilePath: ['.env', '.env.development'],
     }),
+    ThrottlerModule.forRoot([{ttl: 60000,limit: 10}]),
     AuthModule,
     UsersModule,
     PostModule,

@@ -12,3 +12,11 @@ dist
 # Ignore version control files
 .git
 .gitignore
+
+Dockerfile
+.dockerignore
+node_modules
+npm-debug.log
+README.md
+.next
+.git

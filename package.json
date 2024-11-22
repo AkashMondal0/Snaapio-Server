@@ -39,6 +39,7 @@
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-fastify": "^10.3.8",
     "@nestjs/platform-socket.io": "^10.3.10",
+    "@nestjs/throttler": "^6.1.1",
     "@nestjs/websockets": "^10.3.10",
     "bcrypt": "^5.1.1",
     "drizzle-orm": "^0.31.4",
@@ -50,6 +51,7 @@
     "postgres": "^3.4.4",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "socket.io": "^4.7.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {
