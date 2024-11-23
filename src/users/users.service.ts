@@ -13,8 +13,10 @@ export class UsersService {
     private readonly drizzleProvider: DrizzleProvider
   ) { }
 
-  async findUsersByKeyword(keywords: string): Promise<Author[] | []> {
+  async findUsersByKeyword(userKeyword: string): Promise<Author[] | []> {
     try {
+      const keywordForUsername = userKeyword.toLowerCase().trim();
+      const keywordForName = userKeyword.trim();
       const data = await this.drizzleProvider.db.select({
         id: UserSchema.id,
         username: UserSchema.username,
@@ -25,9 +27,8 @@ export class UsersService {
         website: UserSchema.website,
       }).from(UserSchema).where(
         or(
-          like(UserSchema.username, `%${keywords}%`),
-          like(UserSchema.name, `%${keywords}%`),
-          like(UserSchema.email, `%${keywords}%`),
+          like(UserSchema.username, `%${keywordForUsername}%`),
+          like(UserSchema.name, `%${keywordForName}%`)
         )
       ).limit(20)
 
