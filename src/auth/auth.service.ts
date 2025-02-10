@@ -3,7 +3,6 @@ import { JwtService } from '@nestjs/jwt';
 import { comparePassword, createHash } from 'src/lib/bcrypt/bcrypt.function';
 import { RegisterUserPayload } from 'src/lib/validation/ZodSchema';
 import { FastifyReply, FastifyRequest } from 'fastify';
-import configuration from 'src/configs/configuration';
 import { AccountSchema, UserPasswordSchema, UserSchema, UserSettingsSchema } from 'src/db/drizzle/drizzle.schema';
 import { eq, or } from 'drizzle-orm';
 import { DrizzleProvider } from 'src/db/drizzle/drizzle.provider';
@@ -38,12 +37,18 @@ export class AuthService {
       throw new HttpException('Wrong Credentials', HttpStatus.UNAUTHORIZED);
     }
 
-    const accessToken = await this.jwtService.signAsync({
+    const userinfo = {
       username: user.username,
       id: user.id,
       email: user.email,
-      name: user.name
-    }, { expiresIn: '30d' })
+      name: user.name,
+      bio: user.bio ?? "",
+      website: user.website ?? [],
+      profilePicture: user.profilePicture,
+      lastStatusUpdate: user.lastStatusUpdate ?? "",
+    }
+
+    const accessToken = await this.jwtService.signAsync(userinfo, { expiresIn: '30d' })
 
     response.setCookie('sky.inc-token', accessToken, {
       path: "/",
@@ -54,7 +59,7 @@ export class AuthService {
       secure: true
     })
     return {
-      ...user,
+      ...userinfo,
       accessToken: accessToken,
     };
   }
@@ -75,12 +80,17 @@ export class AuthService {
       throw new HttpException('Failed to create user', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    const accessToken = await this.jwtService.signAsync({
+    const userinfo = {
       username: newUser.username,
       email: newUser.email,
       name: newUser.name,
       id: newUser.id,
-    }, { expiresIn: '30d' })
+      bio: "",
+      website: [],
+      profilePicture: newUser.profilePicture,
+      lastStatusUpdate: "",
+    }
+    const accessToken = await this.jwtService.signAsync(userinfo, { expiresIn: '30d' })
 
     response.setCookie('sky.inc-token', accessToken, {
       path: '/',
@@ -91,7 +101,7 @@ export class AuthService {
       secure: true
     })
 
-    return { ...newUser, accessToken: accessToken }
+    return { ...userinfo, accessToken: accessToken }
   }
 
   async signOut(request: FastifyRequest, response: FastifyReply): Promise<string | HttpException> {
@@ -107,7 +117,11 @@ export class AuthService {
     email: string,
     name: string,
     password: string | null,
-    hash: string | null
+    hash: string | null,
+    bio: string,
+    website: string[],
+    profilePicture: string
+    lastStatusUpdate: string
   } | null> {
     try {
       const user = await this.drizzleProvider.db.select({
@@ -117,7 +131,10 @@ export class AuthService {
         email: UserSchema.email,
         password: UserPasswordSchema.password,
         hash: UserPasswordSchema.hash,
-        profilePicture: UserSchema.profilePicture
+        profilePicture: UserSchema.profilePicture,
+        bio: UserSchema.bio,
+        website: UserSchema.website,
+        lastStatusUpdate: UserSchema.lastStatusUpdate
       })
         .from(UserSchema)
         .leftJoin(UserPasswordSchema, eq(UserSchema.id, UserPasswordSchema.id))
@@ -128,7 +145,7 @@ export class AuthService {
         return null;
       }
 
-      return user[0]
+      return user[0] as any
     } catch (error) {
       Logger.error(`findUserAndPassword Error:`, error)
       return null;
@@ -176,6 +193,10 @@ export class AuthService {
         username: UserSchema.username,
         name: UserSchema.name,
         email: UserSchema.email,
+        profilePicture: UserSchema.lastStatusUpdate,
+        bio: UserSchema.bio,
+        lastStatusUpdate: UserSchema.lastStatusUpdate,
+        website: UserSchema.website,
       })
 
       await this.drizzleProvider.db.insert(AccountSchema).values({
@@ -197,7 +218,7 @@ export class AuthService {
         return null;
       }
 
-      return newUser[0] as Users
+      return newUser[0] as any
     } catch (error) {
       Logger.error(`createUser Error:`, error)
       return null

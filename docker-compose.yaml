@@ -1,12 +1,15 @@
-version: '1.0'
+version: '3.8'
 services:
   server:
-    image: akashmondal0/skylight-backend:dev
-    # restart: always
+    image: akashmondal0/skylight-backend:0.0.1
     ports:
-      - 5000:5000
-    environment:
-    # update the environment variables
-      PG_URL: "postgresql://postgres:password@localhost:5432/postgres"
-      REDIS_URL: "redis://localhost:6379",
-      JWT_SECRET: "c74e6cd4ce5dc2b67c4c0512c9354445"
+      - "5000:5000"
+    env_file:
+      - .env
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
