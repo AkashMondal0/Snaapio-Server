@@ -4,10 +4,11 @@ import { MessageResolver } from './message.resolver';
 import { MessageController } from './message.controller';
 import { RedisModule } from 'src/db/redis/redis.module';
 import { DrizzleModule } from 'src/db/drizzle/drizzle.module';
+import { EventsModule } from 'src/event/event.module';
 
 @Module({
-  imports: [RedisModule, DrizzleModule],
-  providers: [MessageResolver, MessageService],
+  imports: [RedisModule, DrizzleModule, EventsModule],
+  providers: [MessageResolver, MessageService,EventsModule],
   controllers: [MessageController],
 })
-export class MessageModule {}
+export class MessageModule { }

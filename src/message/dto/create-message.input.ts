@@ -18,3 +18,16 @@ export class CreateMessageInput {
   @Field(() => [String], { description: 'Example field (placeholder)' })
   members: string[];
 }
+
+@InputType()
+export class CreateMessageInputSeen {
+
+  @Field(() => String)
+  authorId: string;
+
+  @Field(() => String)
+  conversationId: string;
+
+  @Field(() => [String])
+  members: string[];
+}

@@ -1,3 +1,4 @@
+import Redis from 'ioredis';
 import { Injectable, Logger, OnModuleInit, UseGuards } from '@nestjs/common';
 import { event_name } from 'src/configs/connection.name';
 import {
@@ -7,9 +8,8 @@ import {
     WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { WsJwtGuard } from 'src/auth/guard/Ws-Jwt-auth.guard';
-import { Notification } from 'src/notification/entities/notification.entity';
-import Redis from 'ioredis';
+// import { WsJwtGuard } from 'src/auth/guard/Ws-Jwt-auth.guard';
+// import { Notification } from 'src/notification/entities/notification.entity';
 
 if (!process.env.REDIS_URL) throw new Error("REDIS_URL is not defined in .env file");
 const url = process.env.REDIS_URL;
@@ -68,8 +68,10 @@ export class EventGateway implements OnModuleInit {
         return ids.filter(Boolean) as string[];
     }
 
-    publishMessage(channel: string, data: any) {
-        this.client.publish(channel, JSON.stringify(data));
+    async publishMessage(channel: string, data: any) {
+        const ids = await this.findUserBySocketId(data.members);
+        if (!ids) return
+        this.client.publish(channel, JSON.stringify({ ...data, members: ids }));
     }
 
     async handleConnection(client: Socket) {
@@ -82,33 +84,33 @@ export class EventGateway implements OnModuleInit {
         if (userId) await this.client.hdel("skylight:clients", userId);
     }
 
-    @UseGuards(WsJwtGuard)
-    @SubscribeMessage(event_name.conversation.message)
-    async IncomingClientMessage(@MessageBody() data: any) {
-        const ids = await this.findUserBySocketId(data.members);
-        if (ids) this.publishMessage(event_name.conversation.message, { ...data, members: ids });
-    }
+    // @UseGuards(WsJwtGuard)
+    // @SubscribeMessage(event_name.conversation.message)
+    // async IncomingClientMessage(@MessageBody() data: any) {
+    //     const ids = await this.findUserBySocketId(data.members);
+    //     if (ids) this.publishMessage(event_name.conversation.message, { ...data, members: ids });
+    // }
 
-    @UseGuards(WsJwtGuard)
-    @SubscribeMessage(event_name.conversation.seen)
-    async IncomingClientMessageSeen(@MessageBody() data: any) {
-        const ids = await this.findUserBySocketId(data.members);
-        if (ids) this.publishMessage(event_name.conversation.seen, { ...data, members: ids });
-    }
+    // @UseGuards(WsJwtGuard)
+    // @SubscribeMessage(event_name.conversation.seen)
+    // async IncomingClientMessageSeen(@MessageBody() data: any) {
+    //     const ids = await this.findUserBySocketId(data.members);
+    //     if (ids) this.publishMessage(event_name.conversation.seen, { ...data, members: ids });
+    // }
 
-    @UseGuards(WsJwtGuard)
-    @SubscribeMessage(event_name.conversation.typing)
-    async IncomingClientTyping(@MessageBody() data: any) {
-        const ids = await this.findUserBySocketId(data.members);
-        if (ids) this.publishMessage(event_name.conversation.typing, { ...data, members: ids });
-    }
+    // @UseGuards(WsJwtGuard)
+    // @SubscribeMessage(event_name.conversation.typing)
+    // async IncomingClientTyping(@MessageBody() data: any) {
+    //     const ids = await this.findUserBySocketId(data.members);
+    //     if (ids) this.publishMessage(event_name.conversation.typing, { ...data, members: ids });
+    // }
 
-    @UseGuards(WsJwtGuard)
-    @SubscribeMessage(event_name.notification.post)
-    async IncomingClientLikeNotification(@MessageBody() data: Notification) {
-        const ids = await this.findUserBySocketId([data.recipientId]);
-        if (ids) this.publishMessage(event_name.notification.post, { ...data, members: ids });
-    }
+    // @UseGuards(WsJwtGuard)
+    // @SubscribeMessage(event_name.notification.post)
+    // async IncomingClientLikeNotification(@MessageBody() data: Notification) {
+    //     const ids = await this.findUserBySocketId([data.recipientId]);
+    //     if (ids) this.publishMessage(event_name.notification.post, { ...data, members: ids });
+    // }
 
     @SubscribeMessage('test')
     async test(@MessageBody() data: any) {

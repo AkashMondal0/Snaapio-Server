@@ -214,6 +214,7 @@ type Query {
   findAllConversation(GraphQLPageQuery: GraphQLPageQuery!): [Conversation!]!
   findOneConversation(GraphQLPageQuery: GraphQLPageQuery!): Conversation!
   findAllMessages(graphQLPageQuery: GraphQLPageQuery!): [Message!]!
+  typingStatus(typingStatusInput: TypingStatusInput!): String!
   findAllFollower(viewFollowerInput: GraphQLPageQuery!): [Author!]!
   findAllFollowing(viewFollowingInput: GraphQLPageQuery!): [Author!]!
   findAllNotifications(findAllNotificationInput: GraphQLPageQuery!): [Notification!]!
@@ -232,6 +233,14 @@ input GraphQLPageQuery {
   limit: Float
 }
 
+input TypingStatusInput {
+  typing: Boolean! = false
+  authorId: String!
+  members: [String!]!
+  conversationId: String!
+  isGroup: Boolean! = false
+}
+
 type Mutation {
   updateUserProfile(UpdateUsersInput: UpdateUsersInput!): Author!
   createPost(createPostInput: CreatePostInput!): Post!
@@ -242,7 +251,7 @@ type Mutation {
   destroyLike(id: String!): Like!
   createConversation(createConversationInput: CreateConversationInput!): Conversation!
   createMessage(createMessageInput: CreateMessageInput!): Message!
-  seenMessages(conversationId: String!): Message!
+  seenMessages(createMessageInputSeen: CreateMessageInputSeen!): Message!
   createFriendship(createFriendshipInput: CreateFriendshipInput!): Friendship!
   destroyFriendship(destroyFriendship: DestroyFriendship!): Friendship!
   createNotification(createNotificationInput: CreateNotificationInput!): Notification!
@@ -349,6 +358,12 @@ input CreateMessageInput {
   members: [String!]!
 }
 
+input CreateMessageInputSeen {
+  authorId: String!
+  conversationId: String!
+  members: [String!]!
+}
+
 input CreateFriendshipInput {
   authorUsername: String!
   authorUserId: String!
@@ -371,6 +386,18 @@ input CreateNotificationInput {
   commentId: String
   storyId: String
   reelId: String
+  author: AuthorInput!
+  post: PostInput!
+}
+
+input AuthorInput {
+  username: String!
+  profilePicture: String
+}
+
+input PostInput {
+  id: String!
+  fileUrl: String
 }
 
 input CreateStoryInput {

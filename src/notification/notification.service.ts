@@ -6,10 +6,15 @@ import { Notification } from './entities/notification.entity';
 import { CommentSchema, ConversationSchema, MessagesSchema, NotificationSchema, PostSchema, UserSchema } from 'src/db/drizzle/drizzle.schema';
 import { and, arrayContains, desc, eq, sql } from 'drizzle-orm';
 import { GraphQLPageQuery } from 'src/lib/types/graphql.global.entity';
+import { EventGateway } from 'src/event/event.gateway';
+import { event_name } from 'src/configs/connection.name';
 
 @Injectable()
 export class NotificationService {
-  constructor(private readonly drizzleProvider: DrizzleProvider) { }
+  constructor(
+    private readonly drizzleProvider: DrizzleProvider,
+    private readonly eventProvider: EventGateway
+  ) { }
 
   async create(user: Author, createNotificationInput: CreateNotificationInput): Promise<Notification> {
     const data = await this.drizzleProvider.db.insert(NotificationSchema)
@@ -21,9 +26,13 @@ export class NotificationService {
         storyId: createNotificationInput.storyId,
         reelId: createNotificationInput.reelId,
         recipientId: createNotificationInput.recipientId,
-      })
-      .returning()
-
+      }).returning()
+    const notificationData = {
+      ...data[0],
+      post: createNotificationInput.post,
+      author: createNotificationInput.author,
+    }
+    this.eventProvider.publishMessage(event_name.notification.post, { ...notificationData, members: [createNotificationInput.recipientId] })
     return data[0] as Notification;
   }
 

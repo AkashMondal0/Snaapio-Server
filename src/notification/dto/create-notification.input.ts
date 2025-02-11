@@ -1,6 +1,23 @@
-import { InputType, Int, Field } from '@nestjs/graphql';
+import { InputType, Field } from '@nestjs/graphql';
 import { NotificationType } from '../entities/notification.entity';
 
+@InputType()
+class AuthorInput {
+  @Field(() => String)
+  username: string;
+
+  @Field(() => String, { nullable: true })
+  profilePicture?: string;
+}
+
+@InputType()
+class PostInput {
+  @Field(() => String)
+  id: string;
+
+  @Field(() => String, { nullable: true })
+  fileUrl?: string;
+}
 @InputType()
 export class CreateNotificationInput {
   @Field(() => String)
@@ -23,4 +40,10 @@ export class CreateNotificationInput {
 
   @Field(() => String, { nullable: true })
   reelId?: string;
+
+  @Field(() => AuthorInput)
+  author: AuthorInput;
+
+  @Field(() => PostInput)
+  post: PostInput;
 }

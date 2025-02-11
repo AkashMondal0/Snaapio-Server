@@ -3,10 +3,11 @@ import { NotificationService } from './notification.service';
 import { NotificationResolver } from './notification.resolver';
 import { DrizzleModule } from 'src/db/drizzle/drizzle.module';
 import { NotificationController } from './notification.controller';
+import { EventsModule } from 'src/event/event.module';
 
 @Module({
-  imports: [DrizzleModule],
-  providers: [NotificationResolver, NotificationService],
+  imports: [DrizzleModule, EventsModule],
+  providers: [NotificationResolver, NotificationService, EventsModule],
   controllers: [NotificationController],
   exports: [NotificationService],
 })
