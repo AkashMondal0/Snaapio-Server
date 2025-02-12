@@ -1,7 +1,7 @@
 import * as crypto from 'crypto';
 type CharacterSet = 'numeric' | 'upper' | 'lower' | 'uppernumeric' | 'lowernumeric' | 'scoped' | 'default';
 
-export const generateRandomString = ({ length = 12, type = "default" }: { length: number, type: CharacterSet }): string => {
+export const generateRandomString = ({ length = 12, type = "default" }: { length?: number, type?: CharacterSet }): string => {
     let characters = '';
     switch (type) {
         case 'numeric':

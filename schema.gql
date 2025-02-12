@@ -202,6 +202,28 @@ type Highlight {
   status: [String!]
 }
 
+type CallSessionUser {
+  username: String!
+  email: String!
+  id: String!
+  name: String!
+  profilePicture: String
+}
+
+type Participants {
+  user: CallSessionUser!
+  riseHand: Boolean!
+  micOn: Boolean!
+  videoOn: Boolean!
+}
+
+type CallSession {
+  sessionId: String!
+  participants: [Participants!]!
+  createdAt: String
+  privateSession: Boolean!
+}
+
 type Query {
   findUserProfile(username: String!): Profile!
   findUsersByKeyword(keyword: String!): [Author!]!
@@ -225,6 +247,7 @@ type Query {
   findAllHighlight(limitAndOffset: GraphQLPageQuery!): [Highlight!]!
   findHighlight(limitAndOffset: GraphQLPageQuery!): Highlight!
   storyTimelineConnection(limitAndOffset: GraphQLPageQuery!): [Author!]!
+  findCallSession(id: String!): CallSession!
 }
 
 input GraphQLPageQuery {
@@ -259,6 +282,9 @@ type Mutation {
   markAsSeenNotification: Boolean!
   createStory(createStoryInput: CreateStoryInput!): Story!
   createHighlight(createHighlightInput: createHighlightInput!): Highlight!
+  createCallSession(participantInput: ParticipantsInput!): CallSession!
+  joinCallSession(participantInput: ParticipantsInput!): CallSession!
+  leaveSession(id: String!): CallSession!
 }
 
 input UpdateUsersInput {
@@ -416,4 +442,12 @@ input createHighlightInput {
   status: String
   stories: [CreateStoryInput!]
   coverImageIndex: Float
+}
+
+input ParticipantsInput {
+  sessionId: String
+  privateSession: Boolean! = false
+  riseHand: Boolean! = false
+  micOn: Boolean!
+  videoOn: Boolean!
 }

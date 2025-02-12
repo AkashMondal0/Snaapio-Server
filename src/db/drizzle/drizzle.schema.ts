@@ -13,6 +13,7 @@ import {
     jsonb
 } from "drizzle-orm/pg-core";
 import { generateRandomString } from "src/lib/id-generate";
+import { Participants } from "src/video-call/dto/call-session";
 
 // enums
 export const roleEnum = pgEnum('role', ['admin', 'user', 'member']);
@@ -316,6 +317,15 @@ export const NotificationSchema = pgTable('notifications', {
     authorRecipientIdx: index('notification_author_recipient_idx').on(notifications.authorId, notifications.recipientId)
 }));
 
+// call session
+export const CallSessionSchema = pgTable('call_sessions', {
+    sessionId: uuid('session_id').defaultRandom().primaryKey(),
+    participants: jsonb('participants').$type<Participants[]>().notNull().default(sql`'[]'::jsonb`),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (callSessions) => ({
+    sessionIdIdx: index('call_session_id_idx').on(callSessions.sessionId),
+}));
+
 // relations
 export const userRelations = relations(UserSchema, ({ many, one }) => ({
     posts: many(PostSchema),
@@ -332,6 +342,7 @@ export const userRelations = relations(UserSchema, ({ many, one }) => ({
     session: many(Session),
     notifications: many(NotificationSchema),
 }));
+
 
 export const postsRelations = relations(PostSchema, ({ one, many }) => ({
     author: one(UserSchema, { fields: [PostSchema.authorId], references: [UserSchema.id] }),
