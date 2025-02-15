@@ -2,10 +2,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { EventGateway } from 'src/event/event.gateway';
 import { DrizzleProvider } from 'src/db/drizzle/drizzle.provider';
 import { RedisProvider } from 'src/db/redis/redis.provider';
-import { CallSession, ParticipantsInput } from './dto/call-session';
+import { CallSession, IncomingCallAnswerInput, ParticipantsInput, RequestForCallInput } from './dto/call-session';
 import { generateRandomString } from 'src/lib/id-generate';
 import { GraphQLError } from 'graphql';
 import { Author } from 'src/users/entities/author.entity';
+import { event_name } from 'src/configs/connection.name';
 const nameRD = "callsession:";
 @Injectable()
 export class CallSessionService {
@@ -123,5 +124,60 @@ export class CallSessionService {
         extensions: { code: 'INTERNAL_ERROR' }
       });
     }
+  }
+
+  async requestForCall(user: Author, requestForCallInput: RequestForCallInput) { // my req
+    // If the user is currently on the phone, return the request author busy another call; or not then call send to user;
+    try {
+      // const existing = await this.redisProvider.client.hget("callSession:clients", requestForCallInput.requestUserId);
+      // if (existing) {
+      //   return {
+      //     message: "busy on another call",
+      //     data: false
+      //   }
+      // };
+
+      const reqCall = {
+        userData: {
+          email: user.email,
+          name: user.name,
+          id: user.id,
+          username: user.username,
+          profilePicture: user.profilePicture,
+        },
+        isVideo: requestForCallInput.isVideo,
+        status: requestForCallInput.status,
+        members: [requestForCallInput.requestUserId]
+      }
+      // await this.redisProvider.client.hset("callSession:clients", user.id, "call-active")
+      await this.eventProvider.publishMessage(event_name.calling.requestForCall, reqCall)
+      return {
+        message: "Request Sent",
+        data: true
+      }
+    } catch (error) {
+      Logger.error(error);
+      throw new GraphQLError('Internal Server Error', {
+        extensions: { code: 'INTERNAL_ERROR' }
+      });
+    }
+  }
+  async incomingCallAnswer(user: Author, incomingCallAnswerInput: IncomingCallAnswerInput) { // friend send me
+    if (incomingCallAnswerInput.acceptCall) {
+      // await this.redisProvider.client.hset("callSession:clients", user.id, "call-active")
+      this.eventProvider.publishMessage(event_name.calling.answerIncomingCall, {
+        message: "Call Accept",
+        data: "ACCEPT",
+        members: [incomingCallAnswerInput.requestSenderUserId]
+      })
+      return "ACCEPT"
+    }
+    // await this.redisProvider.client.hdel("callSession:clients", incomingCallAnswerInput.requestSenderUserId)
+    this.eventProvider.publishMessage(event_name.calling.answerIncomingCall, {
+      message: "Call Decline",
+      data: "DECLINE",
+      members: [incomingCallAnswerInput.requestSenderUserId]
+    })
+    return "DECLINE"
   }
 }

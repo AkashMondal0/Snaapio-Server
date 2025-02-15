@@ -68,3 +68,41 @@ export class ParticipantsInput {
   @Field(() => Boolean, { nullable: false })
   videoOn: boolean;
 }
+
+// type: "audio-call" | "video-call"
+
+@InputType()
+export class RequestForCallInput {
+  @Field(() => String, { nullable: false, defaultValue: "audio-call" })
+  type: string;
+
+  @Field(() => String, { nullable: false })
+  requestUserId: string;
+
+  @Field(() => Boolean, { nullable: false, defaultValue: false })
+  isVideo: boolean;
+
+  @Field(() => String, { nullable: false, defaultValue: "calling" })
+  status: string;
+}
+
+@InputType()
+export class IncomingCallAnswerInput {
+
+  @Field(() => Boolean, { nullable: false, defaultValue: false })
+  acceptCall: boolean;
+
+  @Field(() => String, { nullable: false })
+  requestSenderUserId: string;
+}
+
+
+@ObjectType()
+export class RequestForCall {
+
+  @Field(() => Boolean, { nullable: false, defaultValue: false })
+  data: boolean;
+
+  @Field(() => String, { nullable: false, defaultValue: "Request Call Error" })
+  message: string;
+}

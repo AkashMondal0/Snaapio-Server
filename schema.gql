@@ -224,6 +224,11 @@ type CallSession {
   privateSession: Boolean!
 }
 
+type RequestForCall {
+  data: Boolean!
+  message: String!
+}
+
 type Query {
   findUserProfile(username: String!): Profile!
   findUsersByKeyword(keyword: String!): [Author!]!
@@ -285,6 +290,8 @@ type Mutation {
   createCallSession(participantInput: ParticipantsInput!): CallSession!
   joinCallSession(participantInput: ParticipantsInput!): CallSession!
   leaveSession(id: String!): CallSession!
+  requestForCall(requestForCallInput: RequestForCallInput!): RequestForCall!
+  incomingCallAnswer(incomingCallAnswer: IncomingCallAnswerInput!): String!
 }
 
 input UpdateUsersInput {
@@ -450,4 +457,16 @@ input ParticipantsInput {
   riseHand: Boolean! = false
   micOn: Boolean!
   videoOn: Boolean!
+}
+
+input RequestForCallInput {
+  type: String! = "audio-call"
+  requestUserId: String!
+  isVideo: Boolean! = false
+  status: String! = "calling"
+}
+
+input IncomingCallAnswerInput {
+  acceptCall: Boolean! = false
+  requestSenderUserId: String!
 }

@@ -1,5 +1,5 @@
 import Redis from 'ioredis';
-import { Injectable, Logger, OnModuleInit, UseGuards } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { event_name } from 'src/configs/connection.name';
 import {
     MessageBody,
@@ -8,8 +8,6 @@ import {
     WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-// import { WsJwtGuard } from 'src/auth/guard/Ws-Jwt-auth.guard';
-// import { Notification } from 'src/notification/entities/notification.entity';
 
 if (!process.env.REDIS_URL) throw new Error("REDIS_URL is not defined in .env file");
 const url = process.env.REDIS_URL;
@@ -34,17 +32,25 @@ export class EventGateway implements OnModuleInit {
         try {
             const redisSubscriber = this.sub;
             await redisSubscriber.subscribe(
+                // message
                 event_name.conversation.message,
                 event_name.conversation.seen,
                 event_name.conversation.typing,
+                // notification
                 event_name.notification.post,
-                "test"
+                // call
+                event_name.calling.requestForCall,
+                event_name.calling.answerIncomingCall,
+                event_name.webRtc.offer,
+                event_name.webRtc.answer,
+                event_name.webRtc.candidate,
+                "test",
             );
 
             redisSubscriber.on("message", (channel, message) => {
                 const data = JSON.parse(message);
+                console.log("From Server : Redis SUB :v1", channel);
                 if (channel === "test") {
-                    console.log("From Server : Redis SUB :v1");
                     this.server.emit(channel, data);
                     return;
                 }
@@ -70,7 +76,7 @@ export class EventGateway implements OnModuleInit {
 
     async publishMessage(channel: string, data: any) {
         const ids = await this.findUserBySocketId(data.members);
-        if (!ids) return
+        if (!ids) return;
         this.client.publish(channel, JSON.stringify({ ...data, members: ids }));
     }
 
@@ -84,33 +90,35 @@ export class EventGateway implements OnModuleInit {
         if (userId) await this.client.hdel("skylight:clients", userId);
     }
 
-    // @UseGuards(WsJwtGuard)
-    // @SubscribeMessage(event_name.conversation.message)
-    // async IncomingClientMessage(@MessageBody() data: any) {
-    //     const ids = await this.findUserBySocketId(data.members);
-    //     if (ids) this.publishMessage(event_name.conversation.message, { ...data, members: ids });
-    // }
+    // OFFER EVENT
+    @SubscribeMessage(event_name.webRtc.offer)
+    async handleOffer(@MessageBody() data: {
+        userId: string,
+        members: string[],
+        data: any,
+    }) {
+        this.publishMessage(event_name.webRtc.offer, data)
+    }
 
-    // @UseGuards(WsJwtGuard)
-    // @SubscribeMessage(event_name.conversation.seen)
-    // async IncomingClientMessageSeen(@MessageBody() data: any) {
-    //     const ids = await this.findUserBySocketId(data.members);
-    //     if (ids) this.publishMessage(event_name.conversation.seen, { ...data, members: ids });
-    // }
+    // ANSWER EVENT
+    @SubscribeMessage(event_name.webRtc.answer)
+    async handleAnswer(@MessageBody() data: {
+        userId: string,
+        members: string[],
+        data: any,
+    }) {
+        this.publishMessage(event_name.webRtc.answer, data)
+    }
 
-    // @UseGuards(WsJwtGuard)
-    // @SubscribeMessage(event_name.conversation.typing)
-    // async IncomingClientTyping(@MessageBody() data: any) {
-    //     const ids = await this.findUserBySocketId(data.members);
-    //     if (ids) this.publishMessage(event_name.conversation.typing, { ...data, members: ids });
-    // }
-
-    // @UseGuards(WsJwtGuard)
-    // @SubscribeMessage(event_name.notification.post)
-    // async IncomingClientLikeNotification(@MessageBody() data: Notification) {
-    //     const ids = await this.findUserBySocketId([data.recipientId]);
-    //     if (ids) this.publishMessage(event_name.notification.post, { ...data, members: ids });
-    // }
+    // CANDIDATE EVENT
+    @SubscribeMessage(event_name.webRtc.candidate)
+    async handleCandidate(@MessageBody() data: {
+        userId: string,
+        members: string[],
+        data: any,
+    }) {
+        this.publishMessage(event_name.webRtc.candidate, data)
+    }
 
     @SubscribeMessage('test')
     async test(@MessageBody() data: any) {

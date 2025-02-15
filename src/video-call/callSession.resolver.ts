@@ -1,5 +1,5 @@
 import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
-import { CallSession, ParticipantsInput } from './dto/call-session';
+import { CallSession, IncomingCallAnswerInput, ParticipantsInput, RequestForCall, RequestForCallInput } from './dto/call-session';
 import { CallSessionService } from './callSession.service';
 import { GqlAuthGuard } from 'src/auth/guard/Gql-auth.guard';
 import { UseGuards } from '@nestjs/common';
@@ -29,9 +29,22 @@ export class CallSessionResolver {
   }
 
   @UseGuards(GqlAuthGuard)
-  @Mutation(() => CallSession)
+  @Mutation(() => CallSession, { name: "leaveSession" })
   leaveSession(@SessionUserGraphQl() user: Author, @Args('id', { type: () => String }) id: string) {
     return this.CallSessionService.leaveSession(user, id);
   }
+  // personal call
+  @UseGuards(GqlAuthGuard)
+  @Mutation(() => RequestForCall)
+  requestForCall(@SessionUserGraphQl() user: Author, @Args('requestForCallInput') requestForCallInput: RequestForCallInput) {
+    return this.CallSessionService.requestForCall(user, requestForCallInput);
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Mutation(() => String)
+  incomingCallAnswer(@SessionUserGraphQl() user: Author, @Args('incomingCallAnswer') incomingCallAnswerInput: IncomingCallAnswerInput) {
+    return this.CallSessionService.incomingCallAnswer(user, incomingCallAnswerInput);
+  }
+
 
 }
