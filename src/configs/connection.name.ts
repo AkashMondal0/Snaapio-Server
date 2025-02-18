@@ -13,7 +13,10 @@ export const event_name = Object.freeze(
         webRtc: {
             offer: "offer",
             answer: "answer",
-            candidate: "candidate"
+            candidate: "candidate",
+            peerLeft: "peerLeft",
+            sendCall: "send-call",
+            answerCall: "answer-call"
         },
         calling: {
             // server

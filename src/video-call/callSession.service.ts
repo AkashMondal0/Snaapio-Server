@@ -163,21 +163,12 @@ export class CallSessionService {
     }
   }
   async incomingCallAnswer(user: Author, incomingCallAnswerInput: IncomingCallAnswerInput) { // friend send me
-    if (incomingCallAnswerInput.acceptCall) {
-      // await this.redisProvider.client.hset("callSession:clients", user.id, "call-active")
-      this.eventProvider.publishMessage(event_name.calling.answerIncomingCall, {
-        message: "Call Accept",
-        data: "ACCEPT",
-        members: [incomingCallAnswerInput.requestSenderUserId]
-      })
-      return "ACCEPT"
-    }
-    // await this.redisProvider.client.hdel("callSession:clients", incomingCallAnswerInput.requestSenderUserId)
+    // await this.redisProvider.client.hset("callSession:clients", user.id, "call-active")
     this.eventProvider.publishMessage(event_name.calling.answerIncomingCall, {
-      message: "Call Decline",
-      data: "DECLINE",
+      message: "Call Accept",
+      data: incomingCallAnswerInput.acceptCall ? "ACCEPT" : "DECLINE",
       members: [incomingCallAnswerInput.requestSenderUserId]
     })
-    return "DECLINE"
+    return "CALL_STATE"
   }
 }
