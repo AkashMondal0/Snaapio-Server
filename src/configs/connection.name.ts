@@ -16,7 +16,8 @@ export const event_name = Object.freeze(
             candidate: "candidate",
             peerLeft: "peerLeft",
             sendCall: "send-call",
-            answerCall: "answer-call"
+            answerCall: "answer-call",
+            callAction: "call-action",
         },
         calling: {
             // server

@@ -46,6 +46,7 @@ export class EventGateway implements OnModuleInit {
                 event_name.webRtc.peerLeft,
                 event_name.webRtc.sendCall,
                 event_name.webRtc.answerCall,
+                event_name.webRtc.callAction,
                 "test",
             );
 
@@ -103,63 +104,67 @@ export class EventGateway implements OnModuleInit {
 
     async handleDisconnect(client: Socket) {
         const userId = this.extractUserIdAndName(client)?.userId;
-        if (userId) await this.client.hdel("skylight:clients", userId);
+        if (!userId) return
+        await this.client.hdel("skylight:clients", userId);
+        await this.client.hdel("callSession:clients", userId)
     }
 
     // OFFER EVENT
     @UseGuards(WsJwtGuard)
     @SubscribeMessage(event_name.webRtc.offer)
-    async handleOffer(@MessageBody() data: {
-        userId: string,
-        members: string[],
-        data: any,
-    }) {
+    async handleOffer(@MessageBody() data: any) {
         this.publishMessageToSocket(event_name.webRtc.offer, data)
     }
 
     // ANSWER EVENT
     @UseGuards(WsJwtGuard)
     @SubscribeMessage(event_name.webRtc.answer)
-    async handleAnswer(@MessageBody() data: {
-        userId: string,
-        members: string[],
-        data: any,
-    }) {
+    async handleAnswer(@MessageBody() data: any) {
         this.publishMessageToSocket(event_name.webRtc.answer, data)
     }
 
     // CANDIDATE EVENT
     @UseGuards(WsJwtGuard)
     @SubscribeMessage(event_name.webRtc.candidate)
-    async handleCandidate(@MessageBody() data: {
-        userId: string,
-        members: string[],
-        data: any,
-    }) {
+    async handleCandidate(@MessageBody() data: any) {
         this.publishMessageToSocket(event_name.webRtc.candidate, data)
     }
 
     // handlePeerLeft EVENT
     @UseGuards(WsJwtGuard)
     @SubscribeMessage(event_name.webRtc.peerLeft)
-    async handlePeerLeft(@MessageBody() data: {
-        userId: string,
-        members: string[],
-        data: any,
-    }) {
+    async handlePeerLeft(@MessageBody() data: any) {
+        await this.client.hdel("callSession:clients", data.remoteId)
+        await this.client.hdel("callSession:clients", data.id)
         this.publishMessageToSocket(event_name.webRtc.peerLeft, data)
     }
 
     @UseGuards(WsJwtGuard)
     @SubscribeMessage(event_name.webRtc.sendCall)
     async handleSendCall(@MessageBody() data: any) {
+        const existing = await this.client.hget("callSession:clients", data.remoteId);
+        if (existing) {
+            return {
+                message: "busy on another call",
+                data: false
+            }
+        };
         this.publishMessageToSocket(event_name.webRtc.sendCall, data)
     }
 
     @UseGuards(WsJwtGuard)
     @SubscribeMessage(event_name.webRtc.answerCall)
     async handleAnswerCall(@MessageBody() data: any) {
+        if (data.call === "ACCEPT") {
+            await this.client.hset("callSession:clients", data.remoteId, "call-active")
+            await this.client.hset("callSession:clients", data.id, "call-active")
+        }
         this.publishMessageToSocket(event_name.webRtc.answerCall, data)
+    }
+    @UseGuards(WsJwtGuard)
+    @SubscribeMessage(event_name.webRtc.callAction)
+    async handleCallAction(@MessageBody() data: any) {
+        this.publishMessageToSocket(event_name.webRtc.callAction, data)
     }
 
     @UseGuards(WsJwtGuard)
