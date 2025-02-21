@@ -28,13 +28,13 @@ export class FriendshipResolver {
 
   @UseGuards(GqlAuthGuard)
   @Query(() => [Author], { name: 'findAllFollower' })
-  findAllFollower(@SessionUserGraphQl() user: Author, @Args('viewFollowerInput') viewFollower: GraphQLPageQuery) {
+  findAllFollower(@SessionUserGraphQl() user: Author, @Args('graphQLPageQuery') viewFollower: GraphQLPageQuery) {
     return this.friendshipService.findAllFollower(user, viewFollower);
   }
 
   @UseGuards(GqlAuthGuard)
   @Query(() => [Author], { name: 'findAllFollowing' })
-  findAllFollowing(@SessionUserGraphQl() user: Author, @Args('viewFollowingInput') viewFollowing: GraphQLPageQuery) {
+  findAllFollowing(@SessionUserGraphQl() user: Author, @Args('graphQLPageQuery') viewFollowing: GraphQLPageQuery) {
     return this.friendshipService.findAllFollowing(user, viewFollowing);
   }
 }

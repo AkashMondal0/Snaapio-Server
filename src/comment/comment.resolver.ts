@@ -21,7 +21,7 @@ export class CommentResolver {
 
   @UseGuards(GqlAuthGuard)
   @Query(() => [Comment], { name: 'findAllComments' })
-  findAll(@SessionUserGraphQl() user: Author, @Args('createCommentInput') findCommentInput: GraphQLPageQuery) {
+  findAll(@SessionUserGraphQl() user: Author, @Args('graphQLPageQuery') findCommentInput: GraphQLPageQuery) {
     return this.commentService.findAll(user, findCommentInput);
   }
   

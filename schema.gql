@@ -230,28 +230,28 @@ type RequestForCall {
 }
 
 type Query {
-  findUserProfile(username: String!): Profile!
-  findUsersByKeyword(keyword: String!): [Author!]!
+  findUserProfile(graphQLPageQuery: GraphQLPageQuery!): Profile!
+  findUsersByKeyword(graphQLPageQuery: GraphQLPageQuery!): [Author!]!
   test: String!
-  feedTimelineConnection(limitAndOffset: GraphQLPageQuery!): [Post!]!
-  findAllPosts(findAllPosts: GraphQLPageQuery!): [Post!]!
-  findOnePost(id: String!): Post!
-  findAllComments(createCommentInput: GraphQLPageQuery!): [Comment!]!
-  findAllLikes(findAllLikesInput: GraphQLPageQuery!): [Author!]!
-  findAllConversation(GraphQLPageQuery: GraphQLPageQuery!): [Conversation!]!
-  findOneConversation(GraphQLPageQuery: GraphQLPageQuery!): Conversation!
+  feedTimelineConnection(graphQLPageQuery: GraphQLPageQuery!): [Post!]!
+  findAllPosts(graphQLPageQuery: GraphQLPageQuery!): [Post!]!
+  findOnePost(graphQLPageQuery: GraphQLPageQuery!): Post!
+  findAllComments(graphQLPageQuery: GraphQLPageQuery!): [Comment!]!
+  findAllLikes(graphQLPageQuery: GraphQLPageQuery!): [Author!]!
+  findAllConversation(graphQLPageQuery: GraphQLPageQuery!): [Conversation!]!
+  findOneConversation(graphQLPageQuery: GraphQLPageQuery!): Conversation!
   findAllMessages(graphQLPageQuery: GraphQLPageQuery!): [Message!]!
   typingStatus(typingStatusInput: TypingStatusInput!): String!
-  findAllFollower(viewFollowerInput: GraphQLPageQuery!): [Author!]!
-  findAllFollowing(viewFollowingInput: GraphQLPageQuery!): [Author!]!
-  findAllNotifications(findAllNotificationInput: GraphQLPageQuery!): [Notification!]!
+  findAllFollower(graphQLPageQuery: GraphQLPageQuery!): [Author!]!
+  findAllFollowing(graphQLPageQuery: GraphQLPageQuery!): [Author!]!
+  findAllNotifications(graphQLPageQuery: GraphQLPageQuery!): [Notification!]!
   unseenNotifications: UnReadNotification!
   unseenMessageNotifications: Float!
-  findStory(id: String!): [Story!]!
-  findAllStory(limitAndOffset: GraphQLPageQuery!): [Story!]!
-  findAllHighlight(limitAndOffset: GraphQLPageQuery!): [Highlight!]!
-  findHighlight(limitAndOffset: GraphQLPageQuery!): Highlight!
-  storyTimelineConnection(limitAndOffset: GraphQLPageQuery!): [Author!]!
+  findStory(graphQLPageQuery: GraphQLPageQuery!): [Story!]!
+  findAllStory(graphQLPageQuery: GraphQLPageQuery!): [Story!]!
+  findAllHighlight(graphQLPageQuery: GraphQLPageQuery!): [Highlight!]!
+  findHighlight(graphQLPageQuery: GraphQLPageQuery!): Highlight!
+  storyTimelineConnection(graphQLPageQuery: GraphQLPageQuery!): [Author!]!
   findCallSession(id: String!): CallSession!
 }
 

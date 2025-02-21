@@ -16,31 +16,31 @@ export class StoryResolver {
 
   @UseGuards(GqlAuthGuard)
   @Query(() => [Story], { name: 'findStory' })
-  findOnePost(@SessionUserGraphQl() user: Author, @Args('id', { type: () => String }) id: string) {
-    return this.storyService.findStory(user, id);
+  findOnePost(@SessionUserGraphQl() user: Author, @Args("graphQLPageQuery") limitAndOffset: GraphQLPageQuery) {
+    return this.storyService.findStory(user, limitAndOffset.id);
   }
 
   @UseGuards(GqlAuthGuard)
   @Query(() => [Story], { name: 'findAllStory' })
-  findAllPost(@SessionUserGraphQl() user: Author, @Args("limitAndOffset") limitAndOffset: GraphQLPageQuery) {
+  findAllPost(@SessionUserGraphQl() user: Author, @Args("graphQLPageQuery") limitAndOffset: GraphQLPageQuery) {
     return this.storyService.findAllPost(user, limitAndOffset);
   }
 
   @UseGuards(GqlAuthGuard)
   @Query(() => [Highlight], { name: 'findAllHighlight' })
-  findAllHighlight(@SessionUserGraphQl() user: Author, @Args("limitAndOffset") limitAndOffset: GraphQLPageQuery) {
+  findAllHighlight(@SessionUserGraphQl() user: Author, @Args("graphQLPageQuery") limitAndOffset: GraphQLPageQuery) {
     return this.storyService.findAllHighlight(user, limitAndOffset);
   }
 
   @UseGuards(GqlAuthGuard)
   @Query(() => Highlight, { name: 'findHighlight' })
-  findHighlight(@SessionUserGraphQl() user: Author, @Args("limitAndOffset") limitAndOffset: GraphQLPageQuery) {
+  findHighlight(@SessionUserGraphQl() user: Author, @Args("graphQLPageQuery") limitAndOffset: GraphQLPageQuery) {
     return this.storyService.findHighlight(user, limitAndOffset);
   }
 
   @UseGuards(GqlAuthGuard)
   @Query(() => [Author], { name: 'storyTimelineConnection' })
-  storyTimelineConnection(@SessionUserGraphQl() user: Author, @Args("limitAndOffset") limitAndOffset: GraphQLPageQuery) {
+  storyTimelineConnection(@SessionUserGraphQl() user: Author, @Args("graphQLPageQuery") limitAndOffset: GraphQLPageQuery) {
     return this.storyService.storyTimelineConnection(user, limitAndOffset);
   }
 

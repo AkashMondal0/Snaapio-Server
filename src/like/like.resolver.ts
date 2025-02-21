@@ -25,7 +25,7 @@ export class LikeResolver {
 
   @UseGuards(GqlAuthGuard)
   @Query(() => [Author], { name: 'findAllLikes' })
-  findAllLikes(@SessionUserGraphQl() user: Author, @Args('findAllLikesInput') findAllLikesInput: GraphQLPageQuery) {
+  findAllLikes(@SessionUserGraphQl() user: Author, @Args('graphQLPageQuery') findAllLikesInput: GraphQLPageQuery) {
     return this.likeService.findAll(user, findAllLikesInput);
   }
 }
