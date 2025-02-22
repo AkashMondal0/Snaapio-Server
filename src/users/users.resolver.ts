@@ -12,20 +12,21 @@ import { Roles } from 'src/auth/SetMetadata';
 import { Role } from 'src/lib/types';
 import { Throttle } from '@nestjs/throttler';
 import { GqlThrottlerGuard } from 'src/auth/guard/GqlThrottler.Guard';
+import { GraphQLPageQuery } from 'src/lib/types/graphql.global.entity';
 @Resolver(() => Users)
 export class UsersResolver {
   constructor(private readonly usersService: UsersService) { }
 
   @UseGuards(GqlAuthGuard)
   @Query(() => Profile, { name: 'findUserProfile' })
-  findUserProfile(@SessionUserGraphQl() user: Author, @Args('username', { type: () => String }) username: string) {
-    return this.usersService.findProfile(user, username);
+  findUserProfile(@SessionUserGraphQl() user: Author, @Args("graphQLPageQuery") graphQLPageQuery: GraphQLPageQuery) {
+    return this.usersService.findProfile(user, graphQLPageQuery.id);
   }
 
   @UseGuards(GqlAuthGuard)
   @Query(() => [Author], { name: 'findUsersByKeyword' })
-  findUsersByKeyword(@SessionUserGraphQl() user: Author, @Args('keyword', { type: () => String }) keyword: string) {
-    return this.usersService.findUsersByKeyword(keyword);
+  findUsersByKeyword(@SessionUserGraphQl() user: Author, @Args("graphQLPageQuery") graphQLPageQuery: GraphQLPageQuery) {
+    return this.usersService.findUsersByKeyword(graphQLPageQuery.id);
   }
 
   @UseGuards(GqlAuthGuard)

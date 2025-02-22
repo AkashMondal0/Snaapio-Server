@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
 import { CommentService } from './comment.service';
 import { Comment } from './entities/comment.entity';
 import { CreateCommentInput } from './dto/create-comment.input';
@@ -15,25 +15,25 @@ export class CommentResolver {
 
   @UseGuards(GqlAuthGuard)
   @Mutation(() => Comment, { name: 'createComment' })
-  createComment(@SessionUserGraphQl() user: Author, @Args('createCommentInput') createCommentInput: CreateCommentInput) {
+  createComment(@SessionUserGraphQl() user: Author, @Args('input') createCommentInput: CreateCommentInput) {
     return this.commentService.create(user, createCommentInput);
   }
 
   @UseGuards(GqlAuthGuard)
   @Query(() => [Comment], { name: 'findAllComments' })
-  findAll(@SessionUserGraphQl() user: Author, @Args('createCommentInput') findCommentInput: GraphQLPageQuery) {
+  findAll(@SessionUserGraphQl() user: Author, @Args('graphQLPageQuery') findCommentInput: GraphQLPageQuery) {
     return this.commentService.findAll(user, findCommentInput);
   }
-  
+
   @UseGuards(GqlAuthGuard)
   @Mutation(() => Comment, { name: 'updateComment' })
-  updateComment(@SessionUserGraphQl() user: Author,@Args('updateCommentInput') updateCommentInput: UpdateCommentInput) {
+  updateComment(@SessionUserGraphQl() user: Author, @Args('input') updateCommentInput: UpdateCommentInput) {
     return this.commentService.update(user, updateCommentInput);
   }
 
   @UseGuards(GqlAuthGuard)
   @Mutation(() => Comment, { name: 'destroyComment' })
-  removeComment(@SessionUserGraphQl() user: Author,@Args('id', { type: () => String }) id: string) {
+  removeComment(@SessionUserGraphQl() user: Author, @Args('id', { type: () => String }) id: string) {
     return this.commentService.remove(user, id);
   }
 }

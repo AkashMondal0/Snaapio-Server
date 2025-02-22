@@ -24,7 +24,7 @@ export class ConversationResolver {
   @UseGuards(GqlAuthGuard)
   @Query(() => [Conversation], { name: 'findAllConversation' })
   findAllConversation(@SessionUserGraphQl() user: Author,
-    @Args('GraphQLPageQuery') graphQLPageQuery: GraphQLPageQuery) {
+    @Args('graphQLPageQuery') graphQLPageQuery: GraphQLPageQuery) {
     return this.conversationService.findAll(user, graphQLPageQuery);
   }
 
@@ -32,7 +32,7 @@ export class ConversationResolver {
   @Query(() => Conversation, { name: 'findOneConversation' })
   findOneConversation(
     @SessionUserGraphQl() user: Author,
-    @Args('GraphQLPageQuery') graphQLPageQuery: GraphQLPageQuery
+    @Args('graphQLPageQuery') graphQLPageQuery: GraphQLPageQuery
   ) {
     return this.conversationService.findOne(user, graphQLPageQuery);
   }

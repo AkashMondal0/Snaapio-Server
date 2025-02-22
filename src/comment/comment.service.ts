@@ -20,8 +20,7 @@ export class CommentService {
         postId: createCommentInput.postId,
         content: createCommentInput.content,
         authorId: loggedUser.id
-      }).returning()
-
+      }).returning();
       return {
         ...new_comment[0],
         user: loggedUser

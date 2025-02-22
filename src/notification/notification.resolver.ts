@@ -20,7 +20,7 @@ export class NotificationResolver {
 
   @UseGuards(GqlAuthGuard)
   @Query(() => [Notification], { name: 'findAllNotifications' })
-  findAll(@SessionUserGraphQl() user: Author, @Args('findAllNotificationInput') findAllNotificationInput: GraphQLPageQuery) {
+  findAll(@SessionUserGraphQl() user: Author, @Args('graphQLPageQuery') findAllNotificationInput: GraphQLPageQuery) {
     return this.notificationService.findAll(user, findAllNotificationInput);
   }
 

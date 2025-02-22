@@ -1,11 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { UpdateLikeInput } from './dto/update-like.input';
 import { GraphQLError } from 'graphql';
 import { FriendshipSchema, LikeSchema, UserSchema } from 'src/db/drizzle/drizzle.schema';
 import { DrizzleProvider } from 'src/db/drizzle/drizzle.provider';
 import { and, eq, exists } from 'drizzle-orm';
 import { GraphQLPageQuery } from 'src/lib/types/graphql.global.entity';
 import { Author } from 'src/users/entities/author.entity';
+import { CreateLikeInput } from './dto/create-like.input';
 
 @Injectable()
 export class LikeService {
@@ -73,28 +73,35 @@ export class LikeService {
   }
 
   // like create
-  async create(sessionUser: Author, postId: string): Promise<{ like: boolean } | GraphQLError> {
+  async likeAndDestroy(sessionUser: Author, input: CreateLikeInput): Promise<boolean | GraphQLError> {
     try {
+      if (!input.like) {
+        await this.drizzleProvider.db.delete(LikeSchema).where(and(
+          eq(LikeSchema.authorId, sessionUser.id),
+          eq(LikeSchema.postId, input.id)
+        ))
+        return false
+      }
       const check = await this.drizzleProvider.db.select({
         id: LikeSchema.id
       }).from(LikeSchema).where(and(
         eq(LikeSchema.authorId, sessionUser.id),
-        eq(LikeSchema.postId, postId)
+        eq(LikeSchema.postId, input.id)
       )).limit(1)
 
       if (check.length > 0) {
-        return {
-          like: true,
-        }
+        await this.drizzleProvider.db.delete(LikeSchema).where(and(
+          eq(LikeSchema.authorId, sessionUser.id),
+          eq(LikeSchema.postId, input.id)
+        ))
+        return false
       }
 
       await this.drizzleProvider.db.insert(LikeSchema).values({
         authorId: sessionUser.id,
-        postId: postId
+        postId: input.id
       })
-      return {
-        like: true,
-      };
+      return true
 
     } catch (error) {
       Logger.error(error)
@@ -105,30 +112,8 @@ export class LikeService {
           extensions: { code: 'INTERNAL_SERVER_ERROR' }
         });
       }
+      false
     }
   }
 
-  // like remove
-  async remove(sessionUser: Author, postId: string): Promise<{ like: boolean } | GraphQLError> {
-    try {
-
-      await this.drizzleProvider.db.delete(LikeSchema).where(and(
-        eq(LikeSchema.authorId, sessionUser.id),
-        eq(LikeSchema.postId, postId)
-      ))
-      return {
-        like: false,
-      };
-
-    } catch (error) {
-      Logger.error(error)
-      if (error instanceof GraphQLError) {
-        throw error;
-      } else {
-        throw new GraphQLError('Internal Server Error', {
-          extensions: { code: 'INTERNAL_SERVER_ERROR' }
-        });
-      }
-    }
-  }
 }

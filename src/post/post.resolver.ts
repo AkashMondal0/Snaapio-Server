@@ -17,20 +17,20 @@ export class PostResolver {
 
   @UseGuards(GqlAuthGuard)
   @Query(() => [Post], { name: 'feedTimelineConnection' })
-  feedTimelineConnection(@SessionUserGraphQl() user: Author, @Args("limitAndOffset") limitAndOffset: GraphQLPageQuery) {
+  feedTimelineConnection(@SessionUserGraphQl() user: Author, @Args("graphQLPageQuery") limitAndOffset: GraphQLPageQuery) {
     return this.postService.feed(user, limitAndOffset);
   }
 
   @UseGuards(GqlAuthGuard)
   @Query(() => [Post], { name: 'findAllPosts' })
-  findPosts(@SessionUserGraphQl() user: Author, @Args("findAllPosts") findPosts: GraphQLPageQuery) {
+  findPosts(@SessionUserGraphQl() user: Author, @Args("graphQLPageQuery") findPosts: GraphQLPageQuery) {
     return this.postService.findPosts(user, findPosts);
   }
 
   @UseGuards(GqlAuthGuard)
   @Query(() => Post, { name: 'findOnePost' })
-  findOnePost(@SessionUserGraphQl() user: Author, @Args('id', { type: () => String }) id: string) {
-    return this.postService.findOnePost(user, id);
+  findOnePost(@SessionUserGraphQl() user: Author, @Args('graphQLPageQuery') findPost: GraphQLPageQuery) {
+    return this.postService.findOnePost(user, findPost.id);
   }
 
   @UseGuards(GqlAuthGuard)

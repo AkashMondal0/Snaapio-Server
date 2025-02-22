@@ -23,7 +23,7 @@ async function bootstrap() {
     exposedHeaders: ["set-cookie"]
   });
 
-  await app.register(fastifyCookie, {
+  await app.register(fastifyCookie as any, {
     secret: envs.JWT_SECRET,
   });
 

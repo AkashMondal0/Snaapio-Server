@@ -1,7 +1,9 @@
-import { InputType, Int, Field } from '@nestjs/graphql';
+import { InputType, Field } from '@nestjs/graphql';
 
 @InputType()
 export class CreateLikeInput {
-  @Field(() => String, { description: 'Example field (placeholder)' })
-  postId: string;
+  @Field(() => String)
+  id: string;
+  @Field(() => Boolean)
+  like: boolean;
 }

@@ -106,16 +106,6 @@ type Post {
   status: [String!]
 }
 
-type Like {
-  id: String!
-  authorId: String!
-  postId: String!
-  createdAt: DateTime
-  updatedAt: DateTime
-  alreadyLiked: Boolean
-  user: Author
-}
-
 type Message {
   id: String!
   conversationId: String!
@@ -202,29 +192,57 @@ type Highlight {
   status: [String!]
 }
 
+type CallSessionUser {
+  username: String!
+  email: String!
+  id: String!
+  name: String!
+  profilePicture: String
+}
+
+type Participants {
+  user: CallSessionUser!
+  riseHand: Boolean!
+  micOn: Boolean!
+  videoOn: Boolean!
+}
+
+type CallSession {
+  sessionId: String!
+  participants: [Participants!]!
+  createdAt: String
+  privateSession: Boolean!
+}
+
+type RequestForCall {
+  data: Boolean!
+  message: String!
+}
+
 type Query {
-  findUserProfile(username: String!): Profile!
-  findUsersByKeyword(keyword: String!): [Author!]!
+  findUserProfile(graphQLPageQuery: GraphQLPageQuery!): Profile!
+  findUsersByKeyword(graphQLPageQuery: GraphQLPageQuery!): [Author!]!
   test: String!
-  feedTimelineConnection(limitAndOffset: GraphQLPageQuery!): [Post!]!
-  findAllPosts(findAllPosts: GraphQLPageQuery!): [Post!]!
-  findOnePost(id: String!): Post!
-  findAllComments(createCommentInput: GraphQLPageQuery!): [Comment!]!
-  findAllLikes(findAllLikesInput: GraphQLPageQuery!): [Author!]!
-  findAllConversation(GraphQLPageQuery: GraphQLPageQuery!): [Conversation!]!
-  findOneConversation(GraphQLPageQuery: GraphQLPageQuery!): Conversation!
+  feedTimelineConnection(graphQLPageQuery: GraphQLPageQuery!): [Post!]!
+  findAllPosts(graphQLPageQuery: GraphQLPageQuery!): [Post!]!
+  findOnePost(graphQLPageQuery: GraphQLPageQuery!): Post!
+  findAllComments(graphQLPageQuery: GraphQLPageQuery!): [Comment!]!
+  findAllLikes(graphQLPageQuery: GraphQLPageQuery!): [Author!]!
+  findAllConversation(graphQLPageQuery: GraphQLPageQuery!): [Conversation!]!
+  findOneConversation(graphQLPageQuery: GraphQLPageQuery!): Conversation!
   findAllMessages(graphQLPageQuery: GraphQLPageQuery!): [Message!]!
   typingStatus(typingStatusInput: TypingStatusInput!): String!
-  findAllFollower(viewFollowerInput: GraphQLPageQuery!): [Author!]!
-  findAllFollowing(viewFollowingInput: GraphQLPageQuery!): [Author!]!
-  findAllNotifications(findAllNotificationInput: GraphQLPageQuery!): [Notification!]!
+  findAllFollower(graphQLPageQuery: GraphQLPageQuery!): [Author!]!
+  findAllFollowing(graphQLPageQuery: GraphQLPageQuery!): [Author!]!
+  findAllNotifications(graphQLPageQuery: GraphQLPageQuery!): [Notification!]!
   unseenNotifications: UnReadNotification!
   unseenMessageNotifications: Float!
-  findStory(id: String!): [Story!]!
-  findAllStory(limitAndOffset: GraphQLPageQuery!): [Story!]!
-  findAllHighlight(limitAndOffset: GraphQLPageQuery!): [Highlight!]!
-  findHighlight(limitAndOffset: GraphQLPageQuery!): Highlight!
-  storyTimelineConnection(limitAndOffset: GraphQLPageQuery!): [Author!]!
+  findStory(graphQLPageQuery: GraphQLPageQuery!): [Story!]!
+  findAllStory(graphQLPageQuery: GraphQLPageQuery!): [Story!]!
+  findAllHighlight(graphQLPageQuery: GraphQLPageQuery!): [Highlight!]!
+  findHighlight(graphQLPageQuery: GraphQLPageQuery!): Highlight!
+  storyTimelineConnection(graphQLPageQuery: GraphQLPageQuery!): [Author!]!
+  findCallSession(id: String!): CallSession!
 }
 
 input GraphQLPageQuery {
@@ -244,11 +262,10 @@ input TypingStatusInput {
 type Mutation {
   updateUserProfile(UpdateUsersInput: UpdateUsersInput!): Author!
   createPost(createPostInput: CreatePostInput!): Post!
-  createComment(createCommentInput: CreateCommentInput!): Comment!
-  updateComment(updateCommentInput: UpdateCommentInput!): Comment!
+  createComment(input: CreateCommentInput!): Comment!
+  updateComment(input: UpdateCommentInput!): Comment!
   destroyComment(id: String!): Comment!
-  createLike(id: String!): Like!
-  destroyLike(id: String!): Like!
+  Like(input: CreateLikeInput!): Boolean!
   createConversation(createConversationInput: CreateConversationInput!): Conversation!
   createMessage(createMessageInput: CreateMessageInput!): Message!
   seenMessages(createMessageInputSeen: CreateMessageInputSeen!): Message!
@@ -259,6 +276,11 @@ type Mutation {
   markAsSeenNotification: Boolean!
   createStory(createStoryInput: CreateStoryInput!): Story!
   createHighlight(createHighlightInput: createHighlightInput!): Highlight!
+  createCallSession(participantInput: ParticipantsInput!): CallSession!
+  joinCallSession(participantInput: ParticipantsInput!): CallSession!
+  leaveSession(id: String!): CallSession!
+  requestForCall(requestForCallInput: RequestForCallInput!): RequestForCall!
+  incomingCallAnswer(incomingCallAnswer: IncomingCallAnswerInput!): String!
 }
 
 input UpdateUsersInput {
@@ -319,6 +341,11 @@ input UpdateCommentInput {
   """Example field (placeholder)"""
   authorId: String
   id: String!
+}
+
+input CreateLikeInput {
+  id: String!
+  like: Boolean!
 }
 
 input CreateConversationInput {
@@ -416,4 +443,24 @@ input createHighlightInput {
   status: String
   stories: [CreateStoryInput!]
   coverImageIndex: Float
+}
+
+input ParticipantsInput {
+  sessionId: String
+  privateSession: Boolean! = false
+  riseHand: Boolean! = false
+  micOn: Boolean!
+  videoOn: Boolean!
+}
+
+input RequestForCallInput {
+  type: String! = "audio-call"
+  requestUserId: String!
+  isVideo: Boolean! = false
+  status: String! = "calling"
+}
+
+input IncomingCallAnswerInput {
+  acceptCall: Boolean! = false
+  requestSenderUserId: String!
 }

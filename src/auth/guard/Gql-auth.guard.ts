@@ -23,6 +23,9 @@ export class GqlAuthGuard extends AuthGuard('jwt') {
     if (!request.headers.authorization) {
       throw new AuthenticationError('You are not logged-in.');
     }
+    if (!request.headers.authorization.startsWith('Bearer ')) {
+      request.headers.authorization = `Bearer ${request.headers.authorization}`;
+    }
     return request;
   }
 }
