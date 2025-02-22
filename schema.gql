@@ -106,16 +106,6 @@ type Post {
   status: [String!]
 }
 
-type Like {
-  id: String!
-  authorId: String!
-  postId: String!
-  createdAt: DateTime
-  updatedAt: DateTime
-  alreadyLiked: Boolean
-  user: Author
-}
-
 type Message {
   id: String!
   conversationId: String!
@@ -272,11 +262,10 @@ input TypingStatusInput {
 type Mutation {
   updateUserProfile(UpdateUsersInput: UpdateUsersInput!): Author!
   createPost(createPostInput: CreatePostInput!): Post!
-  createComment(createCommentInput: CreateCommentInput!): Comment!
-  updateComment(updateCommentInput: UpdateCommentInput!): Comment!
+  createComment(input: CreateCommentInput!): Comment!
+  updateComment(input: UpdateCommentInput!): Comment!
   destroyComment(id: String!): Comment!
-  createLike(id: String!): Like!
-  destroyLike(id: String!): Like!
+  Like(input: CreateLikeInput!): Boolean!
   createConversation(createConversationInput: CreateConversationInput!): Conversation!
   createMessage(createMessageInput: CreateMessageInput!): Message!
   seenMessages(createMessageInputSeen: CreateMessageInputSeen!): Message!
@@ -352,6 +341,11 @@ input UpdateCommentInput {
   """Example field (placeholder)"""
   authorId: String
   id: String!
+}
+
+input CreateLikeInput {
+  id: String!
+  like: Boolean!
 }
 
 input CreateConversationInput {
