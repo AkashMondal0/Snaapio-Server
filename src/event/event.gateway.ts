@@ -71,13 +71,6 @@ export class EventGateway implements OnModuleInit {
         return userId && username ? { userId, username } : null;
     }
 
-    async findUserBySocketId(userIds?: string[]): Promise<string[] | null> {
-        if (!userIds?.length) return null;
-        const ids = await Promise.all(userIds.map(userId => this.client.hget("skylight:clients", userId)));
-        if (ids.length <= 0) return null;
-        return ids.filter(Boolean) as string[];
-    }
-
     async getUserIdBySocketId(userId?: string): Promise<string | null> {
         if (typeof userId !== 'string') return null;
         const socketId = await this.client.hget("skylight:clients", userId);
@@ -91,10 +84,17 @@ export class EventGateway implements OnModuleInit {
         this.client.publish(channel, JSON.stringify({ ...data, members: [ids] }));
     }
 
+    async findUserBySocketId(userIds?: string[]): Promise<string[] | null> {
+        if (!userIds?.length) return null;
+        const ids = await Promise.all(userIds.map(userId => this.client.hget("skylight:clients", userId)));
+        return ids.filter(Boolean) as string[] | null;
+    }
+
     async publishMessage(channel: string, data: any) {
         const ids = await this.findUserBySocketId(data.members);
-        if (!ids) return;
-        this.client.publish(channel, JSON.stringify({ ...data, members: ids }));
+        if (ids && ids.length > 0) {
+            this.client.publish(channel, JSON.stringify({ ...data, members: ids }));
+        }
     }
 
     async handleConnection(client: Socket) {
@@ -107,6 +107,13 @@ export class EventGateway implements OnModuleInit {
         if (!userId) return
         await this.client.hdel("skylight:clients", userId);
         await this.client.hdel("callSession:clients", userId)
+    }
+
+    // OFFER EVENT
+    @UseGuards(WsJwtGuard)
+    @SubscribeMessage(event_name.conversation.typing)
+    async handleTyping(@MessageBody() data: any) {
+        this.publishMessage(event_name.conversation.typing, data)
     }
 
     // OFFER EVENT
@@ -161,6 +168,7 @@ export class EventGateway implements OnModuleInit {
         }
         this.publishMessageToSocket(event_name.webRtc.answerCall, data)
     }
+
     @UseGuards(WsJwtGuard)
     @SubscribeMessage(event_name.webRtc.callAction)
     async handleCallAction(@MessageBody() data: any) {
