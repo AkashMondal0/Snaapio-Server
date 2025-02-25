@@ -41,7 +41,7 @@
     "@nestjs/platform-socket.io": "^10.3.10",
     "@nestjs/throttler": "^6.1.1",
     "@nestjs/websockets": "^10.3.10",
-    "bcrypt": "^5.1.1",
+    "bcryptjs": "^3.0.2",
     "drizzle-orm": "^0.31.4",
     "graphql": "^16.8.1",
     "ioredis": "^5.4.1",

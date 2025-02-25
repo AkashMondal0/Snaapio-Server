@@ -31,16 +31,17 @@ import { CallSessionModule } from './video-call/callSession.module';
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: 'schema.gql',
-      playground: false,
       context: (req: any, res: any) => ({ req, res }),
-      plugins: [ApolloServerPluginLandingPageLocalDefault()],
+      playground: process.env.NODE_ENV !== 'production', // Disable in production
+      introspection: process.env.NODE_ENV !== 'production', // Disable in production
+      plugins: process.env.NODE_ENV === 'production' ? [] : [ApolloServerPluginLandingPageLocalDefault()],
     }),
     ConfigModule.forRoot({
       load: [configuration],
       isGlobal: true,
       envFilePath: ['.env', '.env.development'],
     }),
-    ThrottlerModule.forRoot([{ttl: 60000,limit: 10}]),
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 10 }]),
     AuthModule,
     UsersModule,
     PostModule,
