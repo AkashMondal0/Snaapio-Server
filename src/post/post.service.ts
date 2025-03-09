@@ -1,5 +1,5 @@
 
-import { Injectable, Logger } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { DrizzleProvider } from 'src/db/drizzle/drizzle.provider';
 import { count, eq, desc, exists, and, sql } from "drizzle-orm";
 import { GraphQLError } from 'graphql';
@@ -7,7 +7,21 @@ import { CommentSchema, FriendshipSchema, LikeSchema, PostSchema, UserSchema } f
 import { CreatePostInput } from './dto/create-post.input';
 import { GraphQLPageQuery } from 'src/lib/types/graphql.global.entity';
 import { Author } from 'src/users/entities/author.entity';
-import { Post } from './entities/post.entity';
+import { Post, ReqFile } from './entities/post.entity';
+import sharp from 'sharp';
+import { supabase } from 'src/lib/Supabase';
+import { generateRandomString } from 'src/lib/id-generate';
+
+const imageVariants = [
+  { aspectRatio: "1.1-sm", width: 100, height: 100, quality: 70 },
+  { aspectRatio: "1:1", width: 500, height: 500, quality: 70 },
+  { aspectRatio: "4:5", width: 1080, height: 1350, quality: 70 },
+];
+
+const imageBlurVariants = [
+  { aspectRatio: "1:1", width: 100, height: 100, quality: 40 },
+  { aspectRatio: "4:5", width: 300, height: 400, quality: 40 },
+];
 
 @Injectable()
 export class PostService {
@@ -238,6 +252,79 @@ export class PostService {
     } catch (error) {
       Logger.error(`Post not created:`, error)
       throw new GraphQLError(error)
+    }
+  }
+
+  // compressed
+  async processAndUploadImage(
+    file: ReqFile,
+    variant: { width: number; height: number, quality: number, aspectRatio: string },
+    blur: boolean,
+    userId: string
+  ): Promise<string | null> {
+    try {
+      let image = sharp(file.buffer).resize({
+        width: variant.width,
+        height: variant.height,
+        fit: "cover",
+      });
+
+      if (blur) {
+        image = image.blur(16).jpeg({ quality: variant.quality });
+      } else {
+        image = image.jpeg({ quality: variant.quality });
+      }
+
+      const compressedImage = await image.toBuffer();
+      const filePath = `${blur ? `${variant.aspectRatio}-blur` : variant.aspectRatio}/${userId}_${generateRandomString({})}`;
+
+      const { error, data } = await supabase.storage
+        .from("snaapio-production")
+        .upload(filePath, compressedImage, {
+          cacheControl: "3600",
+          contentType: "image/jpeg",
+          upsert: false,
+        });
+
+      if (error) {
+        Logger.error(`Failed to upload ${filePath}:`, error);
+        return null;
+      }
+
+      return data?.path;
+    } catch (error) {
+      Logger.error(`Processing error for ${file.originalname}:`, error);
+      return null;
+    }
+  }
+
+  async compressedImages(files: ReqFile[], userId: string): Promise<string[]> {
+    let imgArr: string[] = [];
+
+    try {
+      // Process normal images
+      const uploadPromises = files.map(async (file) => {
+        const urls = await Promise.all(
+          imageVariants.map((variant) => this.processAndUploadImage(file, variant, false, userId))
+        );
+        imgArr.push(...urls.filter((url): url is string => url !== null)); // Filter out null values
+      });
+
+      // Process blurred images
+      const uploadImageBlurPromises = files.map(async (file) => {
+        const urls = await Promise.all(
+          imageBlurVariants.map((variant) => this.processAndUploadImage(file, variant, true, userId))
+        );
+        imgArr.push(...urls.filter((url): url is string => url !== null)); // Filter out null values
+      });
+
+      // Wait for all uploads to finish
+      await Promise.all([...uploadPromises, ...uploadImageBlurPromises]);
+
+      return imgArr; // Return the collected image URLs
+    } catch (error) {
+      Logger.error("Image compression failed:", error);
+      throw new HttpException('Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 

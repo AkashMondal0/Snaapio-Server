@@ -1,14 +1,11 @@
-import { FastifyReply } from 'fastify';
-import { Body, Controller, Get, HttpException, HttpStatus, Param, Post, Res, UploadedFile, UseGuards, UseInterceptors, } from '@nestjs/common';
+import { FastifyReply, FastifyRequest } from 'fastify';
+import { Body, Controller, Get, HttpException, HttpStatus, Param, Post, Res, UploadedFiles, UseGuards, UseInterceptors, } from '@nestjs/common';
 import { PostService } from './post.service';
-import { FileInterceptor } from '@nest-lab/fastify-multer';
-// import { CreatePostPayload, CreatePostSchema, UpdatePostPayload, UpdatePostSchema } from 'src/lib/validation/ZodSchema';
-// import { ZodValidationPipe } from 'src/lib/validation/Validation';
+import { FilesInterceptor } from '@nest-lab/fastify-multer';
 import { MyAuthGuard } from 'src/auth/guard/My-jwt-auth.guard';
-import sharp from 'sharp';
-import { writeFile } from 'fs/promises';
-import path from 'path';
-import { generateRandomString } from 'src/lib/id-generate';
+import { Author } from 'src/users/entities/author.entity';
+import { RestApiSessionUser } from 'src/decorator/session.decorator';
+import { ReqFile } from './entities/post.entity';
 @Controller({
     path: 'post',
     version: ['1']
@@ -31,37 +28,17 @@ export class PostController {
 
     }
 
-    @Post('/uploadImage')
-    // @UseGuards(MyAuthGuard)
-    @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } })) // 5MB limit
-    async uploadImage(@UploadedFile() file, @Body() body) {
-        if (!file) {
-            throw new Error('No file uploaded');
+    @Post('/upload')
+    @UseGuards(MyAuthGuard)
+    @UseInterceptors(FilesInterceptor('files', 5, { limits: { fileSize: 20 * 1024 * 1024 } }))
+    async uploadImage(@UploadedFiles() files: ReqFile[], @RestApiSessionUser() session: Author) {
+        try {
+            const data = await this.postService.compressedImages(files, session.id)
+            return data;
+        } catch (error) {
+            console.log(error)
+            throw new HttpException('Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        const ASPECT_RATIOS = {
-            "1:1": { width: 300, height: 300 },
-            "4:5": { width: 1080, height: 1350 },
-            "16:9": { width: 1920, height: 1080 },
-        };
-
-        // Validate aspect ratio
-        if (!ASPECT_RATIOS["1:1"]) {
-            return { message: 'Invalid aspect ratio' };
-        }
-
-        const { width, height } = ASPECT_RATIOS["4:5"];
-
-        // Compress image with Sharp
-        const compressedImage = await sharp(file.buffer)
-            .resize({ width, height, fit: "cover" }) // Crop to fit aspect ratio
-            .jpeg({ quality: 70 }) // Convert to JPEG and reduce quality to 70%
-            .toBuffer();
-
-        await writeFile(`uploads/${generateRandomString({})}${file.originalname}`, compressedImage);
-        const imageDirectory = path.join(__dirname, 'uploads');
-        const imageName = `compressed_${file.originalname}`;
-        const imageLink = path.join(imageDirectory, imageName);
-        return imageLink;
     }
 
     // @Put()
