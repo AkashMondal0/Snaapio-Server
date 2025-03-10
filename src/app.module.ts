@@ -22,6 +22,7 @@ import { NotificationModule } from './notification/notification.module';
 import { StoryModule } from './story/story.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { CallSessionModule } from './video-call/callSession.module';
+import { ImageModule } from './image/image.module';
 
 @Module({
   imports: [
@@ -53,7 +54,8 @@ import { CallSessionModule } from './video-call/callSession.module';
     FriendshipModule,
     NotificationModule,
     StoryModule,
-    CallSessionModule
+    CallSessionModule,
+    ImageModule
   ],
   controllers: [AppController],
   providers: [AppService],

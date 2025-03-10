@@ -1,11 +1,6 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
-import { Body, Controller, Get, HttpException, HttpStatus, Param, Post, Res, UploadedFiles, UseGuards, UseInterceptors, } from '@nestjs/common';
+import { Body, Controller, Get, HttpException, HttpStatus, Logger, Param, Post, Query, Res, UploadedFiles, UseGuards, UseInterceptors, } from '@nestjs/common';
 import { PostService } from './post.service';
-import { FilesInterceptor } from '@nest-lab/fastify-multer';
-import { MyAuthGuard } from 'src/auth/guard/My-jwt-auth.guard';
-import { Author } from 'src/users/entities/author.entity';
-import { RestApiSessionUser } from 'src/decorator/session.decorator';
-import { ReqFile } from './entities/post.entity';
 @Controller({
     path: 'post',
     version: ['1']
@@ -26,19 +21,6 @@ export class PostController {
             throw new HttpException('Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-    }
-
-    @Post('/upload')
-    @UseGuards(MyAuthGuard)
-    @UseInterceptors(FilesInterceptor('files', 5, { limits: { fileSize: 20 * 1024 * 1024 } }))
-    async uploadImage(@UploadedFiles() files: ReqFile[], @RestApiSessionUser() session: Author) {
-        try {
-            const data = await this.postService.compressedImages(files, session.id)
-            return data;
-        } catch (error) {
-            console.log(error)
-            throw new HttpException('Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
-        }
     }
 
     // @Put()
