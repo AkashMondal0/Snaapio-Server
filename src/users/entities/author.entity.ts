@@ -1,4 +1,5 @@
 import { ObjectType, Field } from '@nestjs/graphql';
+import { AssetUrls } from 'src/post/entities/post.entity';
 
 @ObjectType()
 export class Author {
@@ -24,11 +25,14 @@ export class Author {
   following?: boolean | null;
 
   @Field(() => String, { nullable: true })
-  bio?: string | null
+  bio?: string | null;
 
   @Field(() => [String], { nullable: true })
-  website?: string[] | any[]
+  website?: string[] | any[];
 
   @Field(() => String, { nullable: true })
-  lastStatusUpdate?: string | null
+  lastStatusUpdate?: string | null;
+
+  @Field(() => [AssetUrls], { nullable: true, defaultValue: [] })
+  fileUrl?: AssetUrls[] | null;
 }

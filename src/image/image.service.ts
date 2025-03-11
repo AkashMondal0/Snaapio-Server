@@ -3,6 +3,8 @@ import { supabase } from 'src/lib/Supabase';
 import { ReqFile } from './entities/image.entity';
 import { RedisProvider } from 'src/db/redis/redis.provider';
 import sharp from 'sharp';
+import { generateRandomString } from 'src/lib/id-generate';
+import { AssetUrls } from 'src/post/entities/post.entity';
 
 const imageVariants = [
   { aspectRatio: "blur_square", width: 150, height: 150, quality: 40, blur: true },
@@ -41,8 +43,7 @@ export class ImageService {
       }
 
       const compressedImage = await image.toBuffer();
-      const filePath = `${userId}_${file.originalname}_${variant.aspectRatio}`;
-      const path = `${variant.blur ? `${variant.aspectRatio}-blur` : variant.aspectRatio}/${filePath}`;
+      const path = `${variant.blur ? `${variant.aspectRatio}-blur` : variant.aspectRatio}/${userId}_${file.originalname}`;
       const { error } = await supabase.storage
         .from("snaapio-production")
         .upload(path, compressedImage, {
@@ -53,20 +54,19 @@ export class ImageService {
 
       if (error) {
         if (error?.message === "The resource already exists") {
-          // Logger.error(`Failed to upload ${filePath}: ${error.message}`);
-          return { [variant.aspectRatio]: filePath };
+          return { [variant.aspectRatio]: path };
         };
       }
 
-      return { [variant.aspectRatio]: filePath };
+      return { [variant.aspectRatio]: path };
     } catch (error) {
       Logger.error(`Processing error for ${file.originalname}:`, error);
       return
     }
   }
 
-  async compressedImages(files: ReqFile[], userId: string): Promise<any[]> {
-    let imgArr: any[] = [];
+  async compressedImages(files: ReqFile[], userId: string): Promise<AssetUrls[]> {
+    let imgArr: AssetUrls[] = [];
     try {
       const uploadPromises = files.map(async (file) => {
         // get metadata
@@ -82,7 +82,9 @@ export class ImageService {
         imgArr.push({
           ...Object.assign({}, ...urls),
           width: metadata.width,
-          height: metadata.height
+          height: metadata.height,
+          type: "image",
+          id: generateRandomString({})
         });
       });
 

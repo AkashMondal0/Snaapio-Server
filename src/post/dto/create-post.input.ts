@@ -25,6 +25,12 @@ export class _AssetUrls {
 
   @Field(() => Number, { nullable: true })
   height?: number | null;
+
+  @Field(() => String, { defaultValue: "image", nullable: true })
+  type?: string | null;
+
+  @Field(() => String, { nullable: true })
+  id?: string | null;
 }
 @InputType()
 export class InputAssets {

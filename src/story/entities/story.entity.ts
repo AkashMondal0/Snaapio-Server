@@ -1,6 +1,6 @@
 import { ObjectType, Field } from '@nestjs/graphql';
 import { Comment } from 'src/comment/entities/comment.entity';
-import { Assets, PostStatus } from 'src/post/entities/post.entity';
+import { AssetUrls, PostStatus } from 'src/post/entities/post.entity';
 import { Author } from 'src/users/entities/author.entity';
 
 @ObjectType()
@@ -11,8 +11,8 @@ export class Story {
   @Field(() => String, { nullable: true })
   content: string | null;
 
-  @Field(() => [Assets], { nullable: true })
-  fileUrl?: Assets[] | null;
+  @Field(() => [AssetUrls], { nullable: true })
+  fileUrl?: AssetUrls[] | null;
   // 
   @Field(() => [String], { nullable: true })
   song?: any[];

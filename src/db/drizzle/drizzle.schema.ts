@@ -28,6 +28,7 @@ export const UserSchema = pgTable('users', {
     name: text('name').notNull(),
     email: text('email').notNull().unique(),
     profilePicture: varchar('profile_picture'),
+    fileUrl: jsonb('file_url').$type<any[]>().notNull().default(sql`'[]'::jsonb`),
     bio: text('bio'),
     lastStatusUpdate: timestamp('last_status_update'),
     website: text('website')

@@ -33,8 +33,8 @@ import { ImageModule } from './image/image.module';
       driver: ApolloDriver,
       autoSchemaFile: 'schema.gql',
       context: (req: any, res: any) => ({ req, res }),
-      playground: process.env.NODE_ENV !== 'production', // Disable in production
-      introspection: process.env.NODE_ENV !== 'production', // Disable in production
+      introspection: process.env.NODE_ENV !== 'production',
+      playground: false,
       plugins: process.env.NODE_ENV === 'production' ? [] : [ApolloServerPluginLandingPageLocalDefault()],
     }),
     ConfigModule.forRoot({

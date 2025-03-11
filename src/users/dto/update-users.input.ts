@@ -1,4 +1,5 @@
-import { InputType, Field} from '@nestjs/graphql';
+import { InputType, Field } from '@nestjs/graphql';
+import { _AssetUrls } from 'src/post/dto/create-post.input';
 
 @InputType()
 export class UpdateUsersInput {
@@ -11,7 +12,7 @@ export class UpdateUsersInput {
   @Field(() => String, { nullable: true })
   name: string;
 
-  @Field(() => String, { nullable: true })
+  @Field(() => String, { nullable: true }) 
   profilePicture: string | null
 
   @Field(() => String, { nullable: true })
@@ -19,4 +20,7 @@ export class UpdateUsersInput {
 
   @Field(() => String, { nullable: true })
   website: string[] | any[]
+
+  @Field(() => [_AssetUrls], { nullable: true, defaultValue: [] })
+  fileUrl?: _AssetUrls[] | null;
 }
