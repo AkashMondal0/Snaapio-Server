@@ -5,14 +5,12 @@ import { RedisProvider } from 'src/db/redis/redis.provider';
 import sharp from 'sharp';
 
 const imageVariants = [
-  { aspectRatio: "1.1-sm", width: 100, height: 100, quality: 70 },
-  { aspectRatio: "1:1", width: 500, height: 500, quality: 70 },
-  { aspectRatio: "4:5", width: 1080, height: 1350, quality: 70 },
-];
-
-const imageBlurVariants = [
-  { aspectRatio: "1:1", width: 100, height: 100, quality: 40 },
-  { aspectRatio: "4:5", width: 300, height: 400, quality: 40 },
+  { aspectRatio: "blur_square", width: 50, height: 50, quality: 10, blur: true },
+  { aspectRatio: "square", width: 500, height: 500, quality: 70, blur: false },
+  { aspectRatio: "square_sm", width: 150, height: 150, quality: 40, blur: false },
+  { aspectRatio: "blur_original", width: 400, height: 600, quality: 10, blur: true },
+  { aspectRatio: "original", width: 1080, height: 1350, quality: 70, blur: false },
+  { aspectRatio: "original_sm", width: 400, height: 600, quality: 40, blur: false },
 ];
 
 @Injectable()
@@ -26,10 +24,9 @@ export class ImageService {
   // function depend -> compressedImages
   async processAndUploadImage(
     file: ReqFile,
-    variant: { width: number; height: number, quality: number, aspectRatio: string },
-    blur: boolean,
+    variant: { width: number; height: number, quality: number, aspectRatio: string, blur: boolean, },
     userId: string
-  ): Promise<string | null> {
+  ): Promise<any> {
     try {
       let image = sharp(file.buffer).resize({
         width: variant.width,
@@ -37,16 +34,16 @@ export class ImageService {
         fit: "cover",
       });
 
-      if (blur) {
-        image = image.blur(16).jpeg({ quality: variant.quality });
+      if (variant.blur) {
+        image = image.blur(20).jpeg({ quality: variant.quality });
       } else {
         image = image.jpeg({ quality: variant.quality });
       }
 
       const compressedImage = await image.toBuffer();
-      const filePath = `${userId}_${file.originalname}`;
-      const path = `${blur ? `${variant.aspectRatio}-blur` : variant.aspectRatio}/${filePath}`;
-      const { error, data } = await supabase.storage
+      const filePath = `${userId}_${file.originalname}_${variant.aspectRatio}`;
+      const path = `${variant.blur ? `${variant.aspectRatio}-blur` : variant.aspectRatio}/${filePath}`;
+      const { error } = await supabase.storage
         .from("snaapio-production")
         .upload(path, compressedImage, {
           cacheControl: "3600",
@@ -55,39 +52,42 @@ export class ImageService {
         });
 
       if (error) {
-        Logger.error(`Failed to upload ${filePath}:`, error);
-        return null;
+        if (error?.message === "The resource already exists") {
+          // Logger.error(`Failed to upload ${filePath}: ${error.message}`);
+          return { [variant.aspectRatio]: filePath };
+        };
       }
 
-      return filePath;
+      return { [variant.aspectRatio]: filePath };
     } catch (error) {
       Logger.error(`Processing error for ${file.originalname}:`, error);
-      return null;
+      return
     }
   }
 
-  async compressedImages(files: ReqFile[], userId: string): Promise<string[]> {
-    let imgArr: string[] = [];
-
+  async compressedImages(files: ReqFile[], userId: string): Promise<any[]> {
+    let imgArr: any[] = [];
     try {
-      // Process normal images
       const uploadPromises = files.map(async (file) => {
-        const urls = await Promise.all(
-          imageVariants.map((variant) => this.processAndUploadImage(file, variant, false, userId))
-        );
-        imgArr.push(...urls.filter((url): url is string => url !== null)); // Filter out null values
-      });
+        // get metadata
+        const metadata = await sharp(file.buffer).metadata();
 
-      // Process blurred images
-      const uploadImageBlurPromises = files.map(async (file) => {
+        // 
         const urls = await Promise.all(
-          imageBlurVariants.map((variant) => this.processAndUploadImage(file, variant, true, userId))
+          imageVariants.map((variant) =>
+            this.processAndUploadImage(file, variant, userId) // Added return statement
+          )
         );
-        imgArr.push(...urls.filter((url): url is string => url !== null)); // Filter out null values
+        // 
+        imgArr.push({
+          ...Object.assign({}, ...urls),
+          width: metadata.width,
+          height: metadata.height
+        });
       });
 
       // Wait for all uploads to finish
-      await Promise.all([...uploadPromises, ...uploadImageBlurPromises]);
+      await Promise.all(uploadPromises);
 
       return imgArr; // Return the collected image URLs
     } catch (error) {
@@ -95,6 +95,7 @@ export class ImageService {
       throw new HttpException('Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
+
   // new
   async uploadImage(files: ReqFile[], userId: string) {
     try {

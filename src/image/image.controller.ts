@@ -19,6 +19,14 @@ export class ImageController {
     return data;
   }
 
+  @Post('/upload_variant')
+  @UseGuards(MyAuthGuard)
+  @UseInterceptors(FilesInterceptor('files', 5, { limits: { fileSize: 20 * 1024 * 1024 } }))
+  async uploadImageVariant(@UploadedFiles() files: ReqFile[], @RestApiSessionUser() session: Author) {
+    const data = await this.imageService.compressedImages(files, session.id)
+    return data;
+  }
+
   @Get(':id/:path')
   async findImage(
     @Param('id') id: string,
@@ -28,7 +36,7 @@ export class ImageController {
     @Query("h") h?: string,
     @Query("q") q?: string,
   ) {
-    const optimizedImage = await this.imageService.imageOptimization({ id,path, w, h, q });
+    const optimizedImage = await this.imageService.imageOptimization({ id, path, w, h, q });
     res.type("image/jpeg").send(optimizedImage);
   }
 
