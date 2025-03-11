@@ -5,12 +5,12 @@ import { RedisProvider } from 'src/db/redis/redis.provider';
 import sharp from 'sharp';
 
 const imageVariants = [
-  { aspectRatio: "blur_square", width: 50, height: 50, quality: 10, blur: true },
+  { aspectRatio: "blur_square", width: 150, height: 150, quality: 40, blur: true },
   { aspectRatio: "square", width: 500, height: 500, quality: 70, blur: false },
   { aspectRatio: "square_sm", width: 150, height: 150, quality: 40, blur: false },
-  { aspectRatio: "blur_original", width: 400, height: 600, quality: 10, blur: true },
+  { aspectRatio: "blur_original", width: 400, height: 600, quality: 30, blur: true },
   { aspectRatio: "original", width: 1080, height: 1350, quality: 70, blur: false },
-  { aspectRatio: "original_sm", width: 400, height: 600, quality: 40, blur: false },
+  { aspectRatio: "original_sm", width: 400, height: 600, quality: 50, blur: false },
 ];
 
 @Injectable()
@@ -35,7 +35,7 @@ export class ImageService {
       });
 
       if (variant.blur) {
-        image = image.blur(20).jpeg({ quality: variant.quality });
+        image = image.blur(14).jpeg({ quality: variant.quality });
       } else {
         image = image.jpeg({ quality: variant.quality });
       }

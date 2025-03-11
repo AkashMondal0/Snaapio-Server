@@ -299,7 +299,7 @@ input CreatePostInput {
   authorId: String!
   title: String
   status: String!
-  fileUrl: [InputAssets!]
+  fileUrl: [_AssetUrls!]
   song: [String!]
   tags: [String!]
   locations: [String!]
@@ -307,19 +307,15 @@ input CreatePostInput {
   city: String
 }
 
-input InputAssets {
-  id: String
-  urls: _AssetUrls
-  type: String
-  caption: String
-}
-
 input _AssetUrls {
-  low: String
-  medium: String
-  high: String
-  blur: String
-  thumbnail: String
+  blur_square: String
+  square: String
+  square_sm: String
+  blur_original: String
+  original: String
+  original_sm: String
+  width: Float
+  height: Float
 }
 
 input CreateCommentInput {
@@ -383,6 +379,13 @@ input CreateMessageInput {
 
   """Example field (placeholder)"""
   members: [String!]!
+}
+
+input InputAssets {
+  id: String
+  urls: [_AssetUrls!]
+  type: String
+  caption: String
 }
 
 input CreateMessageInputSeen {

@@ -16,7 +16,7 @@ export class PostController {
             if (!Post) {
                 throw new HttpException('Post Not Found', HttpStatus.NOT_FOUND);
             }
-            return res.send(Post)
+            return res.send(Post);
         } catch (error) {
             throw new HttpException('Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
         }

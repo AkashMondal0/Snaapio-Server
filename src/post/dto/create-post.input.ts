@@ -3,27 +3,36 @@ import { PostStatus } from '../entities/post.entity';
 @InputType()
 export class _AssetUrls {
   @Field(() => String, { nullable: true })
-  low?: string | null;
+  blur_square?: string | null;
 
   @Field(() => String, { nullable: true })
-  medium?: string | null;
+  square?: string | null;
 
   @Field(() => String, { nullable: true })
-  high?: string | null;
+  square_sm?: string | null;
 
   @Field(() => String, { nullable: true })
-  blur?: string | null;
+  blur_original?: string | null;
 
   @Field(() => String, { nullable: true })
-  thumbnail?: string | null;
+  original?: string | null;
+
+  @Field(() => String, { nullable: true })
+  original_sm?: string | null;
+
+  @Field(() => Number, { nullable: true })
+  width?: number | null;
+
+  @Field(() => Number, { nullable: true })
+  height?: number | null;
 }
 @InputType()
 export class InputAssets {
   @Field(() => String, { nullable: true })
   id?: string;
 
-  @Field(() => _AssetUrls, { nullable: true })
-  urls?: _AssetUrls;
+  @Field(() => [_AssetUrls], { nullable: true })
+  urls?: _AssetUrls | [];
 
   @Field(() => String, { nullable: true })
   type?: 'photo' | 'video' | 'audio' | 'text';
@@ -52,8 +61,8 @@ export class CreatePostInput {
   @Field(() => String)
   status: PostStatus;
   //
-  @Field(() => [InputAssets], { nullable: true })
-  fileUrl?: InputAssets[];
+  @Field(() => [_AssetUrls], { nullable: true })
+  fileUrl?: _AssetUrls[];
 
   @Field(() => [String], { nullable: true })
   song?: any[];
