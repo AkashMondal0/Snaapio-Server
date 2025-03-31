@@ -10,13 +10,16 @@ import {
     integer,
     uuid,
     uniqueIndex,
-    jsonb
+    jsonb,
+    serial
 } from "drizzle-orm/pg-core";
 import { generateRandomString } from "src/lib/id-generate";
 import { Participants } from "src/video-call/dto/call-session";
 
 // enums
 export const roleEnum = pgEnum('role', ['admin', 'user', 'member']);
+export const aiRoleEnum = pgEnum('ai_message_role', ['user', 'assistant']);
+
 export const friendshipStatusEnum = pgEnum('friendship_status', ['pending', 'accepted', 'rejected', 'blocked', 'deleted']);
 export const postStatusEnum = pgEnum('post_status', ['draft', 'published', 'archived']);
 export const userThemeEnum = pgEnum('user_theme', ['light', 'dark', 'system']);
@@ -327,6 +330,31 @@ export const CallSessionSchema = pgTable('call_sessions', {
     sessionIdIdx: index('call_session_id_idx').on(callSessions.sessionId),
 }));
 
+// Chat Sessions Table (Partitioning by User ID Recommended)
+export const AiChatSessions = pgTable("ai_chat_sessions", {
+    id: text('id').$defaultFn(() => generateRandomString({ length: 10, type: "lowernumeric" })).primaryKey(),
+    authorId: uuid('author_id').notNull().references(() => UserSchema.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    shareLink: boolean('share_link').default(false),
+}, (table) => ({
+    userIndex: index("ai_chat_sessions_user_idx").on(table.authorId), // Index for fast queries
+}));
+
+// Chat Messages Table (Partitioned by session_id for scalability)
+export const AiChatMessages = pgTable("ai_chat_messages", {
+    id: text('id').$defaultFn(() => generateRandomString({ length: 10, type: "lowernumeric" })).primaryKey(),
+    sessionId: text('sessionId').references(() => AiChatSessions.id, { onDelete: 'cascade' }),
+    authorId: uuid('author_id').notNull().references(() => UserSchema.id, { onDelete: 'cascade' }),
+    role: aiRoleEnum('role').notNull().default("user"),
+    message: text("message").notNull(),
+    promt: text('promt').notNull(),
+    fileUrls: jsonb('file_urls').$type<any[]>().notNull().default(sql`'[]'::jsonb`),
+    createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+    sessionIndex: index("ai_chat_messages_idx").on(table.sessionId),
+    userIndex: index("ai_chat_messages_user_idx").on(table.authorId),
+}));
+
 // relations
 export const userRelations = relations(UserSchema, ({ many, one }) => ({
     posts: many(PostSchema),
@@ -342,6 +370,22 @@ export const userRelations = relations(UserSchema, ({ many, one }) => ({
     account: one(AccountSchema),
     session: many(Session),
     notifications: many(NotificationSchema),
+}));
+
+export const aiChatSessionRelations = relations(AiChatSessions, ({ one, many }) => ({
+    author: one(UserSchema, { fields: [AiChatSessions.authorId], references: [UserSchema.id] }),
+    messages: many(AiChatMessages),
+}));
+
+export const aiMessagesRelations = relations(AiChatMessages, ({ one }) => ({
+    author: one(UserSchema, {
+        fields: [AiChatMessages.authorId],
+        references: [UserSchema.id],
+    }),
+    session: one(AiChatSessions, {
+        fields: [AiChatMessages.sessionId],
+        references: [AiChatSessions.id],
+    }),
 }));
 
 

@@ -291,10 +291,10 @@ input UpdateUsersInput {
   profilePicture: String
   bio: String
   website: String
-  fileUrl: [_AssetUrls!] = []
+  fileUrl: [InputAssets!] = []
 }
 
-input _AssetUrls {
+input InputAssets {
   blur_square: String
   square: String
   square_sm: String
@@ -314,7 +314,7 @@ input CreatePostInput {
   authorId: String!
   title: String
   status: String!
-  fileUrl: [_AssetUrls!]
+  fileUrl: [InputAssets!]
   song: [String!]
   tags: [String!]
   locations: [String!]
@@ -383,13 +383,6 @@ input CreateMessageInput {
 
   """Example field (placeholder)"""
   members: [String!]!
-}
-
-input InputAssets {
-  id: String
-  urls: [_AssetUrls!]
-  type: String
-  caption: String
 }
 
 input CreateMessageInputSeen {

@@ -42,20 +42,7 @@ export class AssetUrls {
   @Field(() => String, { nullable: true })
   caption?: string | null;
 }
-// @ObjectType()
-// export class Assets {
-//   @Field(() => String, { nullable: true })
-//   id?: string;
 
-//   @Field(() => AssetUrls, { nullable: true })
-//   urls?: AssetUrls;
-
-//   @Field(() => String, { nullable: true })
-//   type?: 'photo' | 'video' | 'audio' | 'text';
-
-//   @Field(() => String, { nullable: true })
-//   caption?: string;
-// }
 @ObjectType()
 export class Post {
   @Field(() => String)

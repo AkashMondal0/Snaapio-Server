@@ -1,7 +1,7 @@
 import { InputType, Field } from '@nestjs/graphql';
 import { PostStatus } from '../entities/post.entity';
 @InputType()
-export class _AssetUrls {
+export class InputAssets {
   @Field(() => String, { nullable: true })
   blur_square?: string | null;
 
@@ -32,20 +32,20 @@ export class _AssetUrls {
   @Field(() => String, { nullable: true })
   id?: string | null;
 }
-@InputType()
-export class InputAssets {
-  @Field(() => String, { nullable: true })
-  id?: string;
+// @InputType()
+// export class InputAssets {
+//   @Field(() => String, { nullable: true })
+//   id?: string;
 
-  @Field(() => [_AssetUrls], { nullable: true })
-  urls?: _AssetUrls | [];
+//   @Field(() => [_AssetUrls], { nullable: true })
+//   urls?: _AssetUrls | [];
 
-  @Field(() => String, { nullable: true })
-  type?: 'photo' | 'video' | 'audio' | 'text';
+//   @Field(() => String, { nullable: true })
+//   type?: 'photo' | 'video' | 'audio' | 'text';
 
-  @Field(() => String, { nullable: true })
-  caption?: string;
-}
+//   @Field(() => String, { nullable: true })
+//   caption?: string;
+// }
 @InputType()
 export class CreatePostInput {
 
@@ -67,8 +67,8 @@ export class CreatePostInput {
   @Field(() => String)
   status: PostStatus;
   //
-  @Field(() => [_AssetUrls], { nullable: true })
-  fileUrl?: _AssetUrls[];
+  @Field(() => [InputAssets], { nullable: true })
+  fileUrl?: InputAssets[];
 
   @Field(() => [String], { nullable: true })
   song?: any[];
