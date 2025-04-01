@@ -10,15 +10,14 @@ import {
     integer,
     uuid,
     uniqueIndex,
-    jsonb,
-    serial
+    jsonb
 } from "drizzle-orm/pg-core";
+import { AiChatMessages } from "src/ai/entities/ai.entity";
 import { generateRandomString } from "src/lib/id-generate";
 import { Participants } from "src/video-call/dto/call-session";
 
 // enums
 export const roleEnum = pgEnum('role', ['admin', 'user', 'member']);
-export const aiRoleEnum = pgEnum('ai_message_role', ['user', 'assistant']);
 
 export const friendshipStatusEnum = pgEnum('friendship_status', ['pending', 'accepted', 'rejected', 'blocked', 'deleted']);
 export const postStatusEnum = pgEnum('post_status', ['draft', 'published', 'archived']);
@@ -336,23 +335,9 @@ export const AiChatSessions = pgTable("ai_chat_sessions", {
     authorId: uuid('author_id').notNull().references(() => UserSchema.id, { onDelete: 'cascade' }),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     shareLink: boolean('share_link').default(false),
+    messages: jsonb('messages').$type<AiChatMessages[]>().notNull().default(sql`'[]'::jsonb`)
 }, (table) => ({
     userIndex: index("ai_chat_sessions_user_idx").on(table.authorId), // Index for fast queries
-}));
-
-// Chat Messages Table (Partitioned by session_id for scalability)
-export const AiChatMessages = pgTable("ai_chat_messages", {
-    id: text('id').$defaultFn(() => generateRandomString({ length: 10, type: "lowernumeric" })).primaryKey(),
-    sessionId: text('sessionId').references(() => AiChatSessions.id, { onDelete: 'cascade' }),
-    authorId: uuid('author_id').notNull().references(() => UserSchema.id, { onDelete: 'cascade' }),
-    role: aiRoleEnum('role').notNull().default("user"),
-    message: text("message").notNull(),
-    promt: text('promt').notNull(),
-    fileUrls: jsonb('file_urls').$type<any[]>().notNull().default(sql`'[]'::jsonb`),
-    createdAt: timestamp("created_at").defaultNow(),
-}, (table) => ({
-    sessionIndex: index("ai_chat_messages_idx").on(table.sessionId),
-    userIndex: index("ai_chat_messages_user_idx").on(table.authorId),
 }));
 
 // relations
@@ -374,20 +359,7 @@ export const userRelations = relations(UserSchema, ({ many, one }) => ({
 
 export const aiChatSessionRelations = relations(AiChatSessions, ({ one, many }) => ({
     author: one(UserSchema, { fields: [AiChatSessions.authorId], references: [UserSchema.id] }),
-    messages: many(AiChatMessages),
 }));
-
-export const aiMessagesRelations = relations(AiChatMessages, ({ one }) => ({
-    author: one(UserSchema, {
-        fields: [AiChatMessages.authorId],
-        references: [UserSchema.id],
-    }),
-    session: one(AiChatSessions, {
-        fields: [AiChatMessages.sessionId],
-        references: [AiChatSessions.id],
-    }),
-}));
-
 
 export const postsRelations = relations(PostSchema, ({ one, many }) => ({
     author: one(UserSchema, { fields: [PostSchema.authorId], references: [UserSchema.id] }),
