@@ -43,7 +43,7 @@ export class ImageService {
       }
 
       const compressedImage = await image.toBuffer();
-      const path = `${variant.blur ? `${variant.aspectRatio}-blur` : variant.aspectRatio}/${userId}_${file.originalname}`;
+      const path = `${variant.aspectRatio}/${userId}_${file.originalname}`
       const { error } = await supabase.storage
         .from("snaapio-production")
         .upload(path, compressedImage, {

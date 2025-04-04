@@ -10,36 +10,8 @@ import { MyAuthGuard } from 'src/auth/guard/My-jwt-auth.guard';
 export class AiController {
   constructor(private readonly aiService: AiService) { }
 
-  @Post('/prompt-image/:id')
-  // @UseGuards(MyAuthGuard)
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 20 * 1024 * 1024 } }))
-  async textToImage(
-    @UploadedFile() file: ReqFile | undefined,
-    @RestApiSessionUser() session: Author,
-    @Query('prompt') prompt: string,
-    @Param('id') id: string
-  ) {
-    if (!prompt) { throw new HttpException('Empty Input Not Allow', HttpStatus.BAD_REQUEST); }
-    const data = await this.aiService.textToImageGenerate(session.id, id, prompt, file);
-    return data;
-  }
-
-  @Post('/create/:id')
-  // @UseGuards(MyAuthGuard)
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 20 * 1024 * 1024 } }))
-  async createAiChatSession(
-    @UploadedFile() file: ReqFile | undefined,
-    @RestApiSessionUser() session: Author,
-    @Query('prompt') prompt: string,
-    @Param('id') id: string
-  ) {
-    if (!prompt) { throw new HttpException('Empty Input Not Allow', HttpStatus.BAD_REQUEST); }
-    const data = await this.aiService.createAiChatSession(session?.id);
-    return data;
-  }
-
-  @Post('/prompt/:id')
-  // @UseGuards(MyAuthGuard)
+  @Post('/gemini2/:id')
+  @UseGuards(MyAuthGuard)
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 20 * 1024 * 1024 } }))
   async textToText(
     @UploadedFile() file: ReqFile | undefined,
@@ -48,7 +20,26 @@ export class AiController {
     @Param('id') id: string
   ) {
     if (!prompt) { throw new HttpException('Empty Input Not Allow', HttpStatus.BAD_REQUEST); }
-    const data = await this.aiService.textToTextGenerate(session?.id, id, prompt, file);
-    return data;
+    return await this.aiService.modelGemini2Flash(session.id, id, prompt, file);
+  }
+
+  @Post('/text-to-image/:id')
+  @UseGuards(MyAuthGuard)
+  async textToImage(
+    @RestApiSessionUser() session: Author,
+    @Param('id') id: string,
+    @Body('prompt') prompt: string,
+  ) {
+    if (!prompt) { throw new HttpException('Empty Input Not Allow', HttpStatus.BAD_REQUEST); }
+    return await this.aiService.modelGemini2FlashImageGeneration(session?.id, id, prompt);
+  }
+
+  @Post('/create')
+  @UseGuards(MyAuthGuard)
+  async createChatSession(
+    @RestApiSessionUser() session: Author,
+    @Body('data') data: any,
+  ) {
+    return await this.aiService.createAiChatSession(session, data);
   }
 }

@@ -30,10 +30,10 @@ export class AiChatMessages {
 @ObjectType()
 export class AiChatSessions {
 	@Field(() => String)
-	id: string;
+	id?: string;
 
 	@Field(() => String)
-	authorId: string;
+	authorId?: string;
 
 	@Field(() => Date, { nullable: true })
 	createdAt?: Date | null;
