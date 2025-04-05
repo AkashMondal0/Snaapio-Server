@@ -2,6 +2,59 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type Comment {
+  id: String!
+  content: String!
+  authorId: String!
+  postId: String!
+  createdAt: DateTime
+  updatedAt: DateTime
+  user: Author
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type AssetUrls {
+  blur_square: String
+  square: String
+  square_sm: String
+  blur_original: String
+  original: String
+  original_sm: String
+  width: Float
+  height: Float
+  type: String
+  id: String
+  caption: String
+}
+
+type Post {
+  id: String!
+  content: String
+  title: String
+  fileUrl: [AssetUrls!]
+  song: [String!]
+  tags: [String!]
+  locations: [String!]
+  country: String
+  city: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  authorId: String
+  username: String
+  commentCount: Float
+  likeCount: Float
+  is_Liked: Boolean
+  user: Author
+  comments: [Comment!]
+  likes: [Author!]
+  top_Like: [Author!]
+  status: [String!]
+}
+
 type Author {
   username: String!
   email: String
@@ -13,6 +66,7 @@ type Author {
   bio: String
   website: [String!]
   lastStatusUpdate: String
+  fileUrl: [AssetUrls!]
 }
 
 type Friendship {
@@ -45,65 +99,12 @@ type Profile {
   bio: String
   website: [String!]
   lastStatusUpdate: String
+  fileUrl: [AssetUrls!]
   postCount: Float
   followerCount: Float
   followingCount: Float
   friendship: Friendship
   top_followers: [Author!]
-}
-
-type Comment {
-  id: String!
-  content: String!
-  authorId: String!
-  postId: String!
-  createdAt: DateTime
-  updatedAt: DateTime
-  user: Author
-}
-
-"""
-A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
-"""
-scalar DateTime
-
-type AssetUrls {
-  low: String
-  medium: String
-  high: String
-  blur: String
-  thumbnail: String
-}
-
-type Assets {
-  id: String
-  urls: AssetUrls
-  type: String
-  caption: String
-}
-
-type Post {
-  id: String!
-  content: String
-  title: String
-  fileUrl: [Assets!]
-  song: [String!]
-  tags: [String!]
-  locations: [String!]
-  country: String
-  city: String
-  createdAt: DateTime
-  updatedAt: DateTime
-  authorId: String
-  username: String
-  commentCount: Float
-  likeCount: Float
-  is_Liked: Boolean
-  user: Author
-  comments: [Comment!]
-  likes: [Author!]
-  top_Like: [Author!]
-  status: [String!]
 }
 
 type Message {
@@ -112,7 +113,7 @@ type Message {
   authorId: String
   content: String!
   user: Author
-  fileUrl: [Assets!]
+  fileUrl: [AssetUrls!]
   deleted: Boolean
   seenBy: [String!]
   createdAt: DateTime
@@ -164,7 +165,7 @@ type UnReadNotification {
 type Story {
   id: String
   content: String
-  fileUrl: [Assets!]
+  fileUrl: [AssetUrls!]
   song: [String!]
   createdAt: String
   updatedAt: String
@@ -290,6 +291,20 @@ input UpdateUsersInput {
   profilePicture: String
   bio: String
   website: String
+  fileUrl: [InputAssets!] = []
+}
+
+input InputAssets {
+  blur_square: String
+  square: String
+  square_sm: String
+  blur_original: String
+  original: String
+  original_sm: String
+  width: Float
+  height: Float
+  type: String = "image"
+  id: String
 }
 
 input CreatePostInput {
@@ -305,21 +320,6 @@ input CreatePostInput {
   locations: [String!]
   country: String
   city: String
-}
-
-input InputAssets {
-  id: String
-  urls: _AssetUrls
-  type: String
-  caption: String
-}
-
-input _AssetUrls {
-  low: String
-  medium: String
-  high: String
-  blur: String
-  thumbnail: String
 }
 
 input CreateCommentInput {
@@ -379,7 +379,7 @@ input CreateMessageInput {
   conversationId: String!
 
   """Example field (placeholder)"""
-  fileUrl: [InputAssets!]!
+  fileUrl: [InputAssets!]
 
   """Example field (placeholder)"""
   members: [String!]!

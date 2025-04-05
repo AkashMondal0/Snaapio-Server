@@ -1,36 +1,51 @@
 import { InputType, Field } from '@nestjs/graphql';
 import { PostStatus } from '../entities/post.entity';
 @InputType()
-export class _AssetUrls {
-  @Field(() => String, { nullable: true })
-  low?: string | null;
-
-  @Field(() => String, { nullable: true })
-  medium?: string | null;
-
-  @Field(() => String, { nullable: true })
-  high?: string | null;
-
-  @Field(() => String, { nullable: true })
-  blur?: string | null;
-
-  @Field(() => String, { nullable: true })
-  thumbnail?: string | null;
-}
-@InputType()
 export class InputAssets {
   @Field(() => String, { nullable: true })
-  id?: string;
-
-  @Field(() => _AssetUrls, { nullable: true })
-  urls?: _AssetUrls;
+  blur_square?: string | null;
 
   @Field(() => String, { nullable: true })
-  type?: 'photo' | 'video' | 'audio' | 'text';
+  square?: string | null;
 
   @Field(() => String, { nullable: true })
-  caption?: string;
+  square_sm?: string | null;
+
+  @Field(() => String, { nullable: true })
+  blur_original?: string | null;
+
+  @Field(() => String, { nullable: true })
+  original?: string | null;
+
+  @Field(() => String, { nullable: true })
+  original_sm?: string | null;
+
+  @Field(() => Number, { nullable: true })
+  width?: number | null;
+
+  @Field(() => Number, { nullable: true })
+  height?: number | null;
+
+  @Field(() => String, { defaultValue: "image", nullable: true })
+  type?: string | null;
+
+  @Field(() => String, { nullable: true })
+  id?: string | null;
 }
+// @InputType()
+// export class InputAssets {
+//   @Field(() => String, { nullable: true })
+//   id?: string;
+
+//   @Field(() => [_AssetUrls], { nullable: true })
+//   urls?: _AssetUrls | [];
+
+//   @Field(() => String, { nullable: true })
+//   type?: 'photo' | 'video' | 'audio' | 'text';
+
+//   @Field(() => String, { nullable: true })
+//   caption?: string;
+// }
 @InputType()
 export class CreatePostInput {
 

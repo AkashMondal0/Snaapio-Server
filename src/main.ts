@@ -7,7 +7,7 @@ import { AppModule } from './app.module';
 import { Logger, VersioningType } from '@nestjs/common';
 import configuration from './configs/configuration';
 import fastifyCookie from '@fastify/cookie';
-
+import multipart from '@fastify/multipart';
 const envs = configuration()
 
 async function bootstrap() {
@@ -26,6 +26,8 @@ async function bootstrap() {
   await app.register(fastifyCookie as any, {
     secret: envs.JWT_SECRET,
   });
+    // Register multipart support for Fastify
+  await app.register(multipart as any);
 
   await app.listen(5000, "0.0.0.0")
   for (const key in envs) {

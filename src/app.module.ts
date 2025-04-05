@@ -22,6 +22,8 @@ import { NotificationModule } from './notification/notification.module';
 import { StoryModule } from './story/story.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { CallSessionModule } from './video-call/callSession.module';
+import { ImageModule } from './image/image.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -32,8 +34,8 @@ import { CallSessionModule } from './video-call/callSession.module';
       driver: ApolloDriver,
       autoSchemaFile: 'schema.gql',
       context: (req: any, res: any) => ({ req, res }),
-      playground: process.env.NODE_ENV !== 'production', // Disable in production
-      introspection: process.env.NODE_ENV !== 'production', // Disable in production
+      introspection: process.env.NODE_ENV !== 'production',
+      playground: false,
       plugins: process.env.NODE_ENV === 'production' ? [] : [ApolloServerPluginLandingPageLocalDefault()],
     }),
     ConfigModule.forRoot({
@@ -53,7 +55,9 @@ import { CallSessionModule } from './video-call/callSession.module';
     FriendshipModule,
     NotificationModule,
     StoryModule,
-    CallSessionModule
+    CallSessionModule,
+    ImageModule,
+    AiModule
   ],
   controllers: [AppController],
   providers: [AppService],

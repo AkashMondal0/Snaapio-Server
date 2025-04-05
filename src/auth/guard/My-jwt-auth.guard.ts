@@ -35,9 +35,9 @@ export class MyAuthGuard implements CanActivate {
     }
 
     // if request is not public, check for token
-
+    
     const request = context.switchToHttp().getRequest();
-    const token = this.extractTokenFromHeader(request);
+    const token = this.extractTokenFromHeader(request) || request.headers.authorization;
 
     if (!token) {
       throw new UnauthorizedException();

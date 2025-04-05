@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   server:
-    image: akashmondal0/skylight-backend:0.0.1
+    image: akashmondal0/skylight-backend:latest
     ports:
       - "5000:5000"
     env_file:

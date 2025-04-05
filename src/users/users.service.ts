@@ -89,7 +89,7 @@ export class UsersService {
         .groupBy(UserSchema.id)
 
       if (!data[0]) {
-        throw new GraphQLError("An error occurred while fetching user profile",{
+        throw new GraphQLError("An error occurred while fetching user profile", {
           extensions: { code: 'PAGE_NOT_FOUND' }
         })
       }
@@ -113,6 +113,7 @@ export class UsersService {
           email: updateUsersInput.email,
           bio: updateUsersInput.bio,
           website: updateUsersInput.website,
+          fileUrl: updateUsersInput.fileUrl ?? []
         })
         .where(eq(UserSchema.id, user.id))
         .returning({
@@ -122,6 +123,7 @@ export class UsersService {
           email: UserSchema.email,
           bio: UserSchema.bio,
           website: UserSchema.website,
+          fileUrl: UserSchema.fileUrl
         })
 
       return data[0] as Author

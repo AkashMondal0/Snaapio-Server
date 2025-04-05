@@ -10,34 +10,39 @@ export enum PostStatus {
 @ObjectType()
 export class AssetUrls {
   @Field(() => String, { nullable: true })
-  low?: string | null;
+  blur_square?: string | null;
 
   @Field(() => String, { nullable: true })
-  medium?: string | null;
+  square?: string | null;
 
   @Field(() => String, { nullable: true })
-  high?: string | null;
+  square_sm?: string | null;
 
   @Field(() => String, { nullable: true })
-  blur?: string | null;
+  blur_original?: string | null;
 
   @Field(() => String, { nullable: true })
-  thumbnail?: string | null;
+  original?: string | null;
+
+  @Field(() => String, { nullable: true })
+  original_sm?: string | null;
+
+  @Field(() => Number, { nullable: true })
+  width?: number | null;
+
+  @Field(() => Number, { nullable: true })
+  height?: number | null;
+
+  @Field(() => String, { defaultValue: "image", nullable: true })
+  type?: string | null | 'photo' | 'video' | 'audio' | 'text';
+
+  @Field(() => String, { nullable: true })
+  id?: string | null;
+
+  @Field(() => String, { nullable: true })
+  caption?: string | null;
 }
-@ObjectType()
-export class Assets {
-  @Field(() => String, { nullable: true })
-  id?: string;
 
-  @Field(() => AssetUrls, { nullable: true })
-  urls?: AssetUrls;
-
-  @Field(() => String, { nullable: true })
-  type?: 'photo' | 'video' | 'audio' | 'text';
-
-  @Field(() => String, { nullable: true })
-  caption?: string;
-}
 @ObjectType()
 export class Post {
   @Field(() => String)
@@ -49,8 +54,8 @@ export class Post {
   @Field(() => String, { nullable: true })
   title?: string | null;
 
-  @Field(() => [Assets], { nullable: true })
-  fileUrl?: Assets[] | null;
+  @Field(() => [AssetUrls], { nullable: true, defaultValue: [] })
+  fileUrl?: AssetUrls[] | null;
   // 
   @Field(() => [String], { nullable: true })
   song?: any[];

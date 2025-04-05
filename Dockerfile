@@ -3,7 +3,7 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+RUN npm install -f
 COPY . .
 RUN npm run build
 
@@ -14,7 +14,7 @@ WORKDIR /app
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/dist ./dist
 # Install only production dependencies in the final stage
-RUN npm ci --production
+RUN npm ci --production --legacy-peer-deps
 
 EXPOSE 5000
 CMD [ "npm", "start" ]
