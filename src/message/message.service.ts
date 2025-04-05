@@ -54,7 +54,7 @@ export class MessageService {
         content: createMessageInput.content,
         conversationId: createMessageInput.conversationId,
         authorId: createMessageInput.authorId,
-        fileUrl: createMessageInput.fileUrl,
+        fileUrl: createMessageInput.fileUrl ?? [],
         seenBy: [user.id]
       })
       .returning()

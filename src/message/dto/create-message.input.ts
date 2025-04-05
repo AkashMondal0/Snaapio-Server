@@ -12,7 +12,7 @@ export class CreateMessageInput {
   @Field(() => String, { description: 'Example field (placeholder)' })
   conversationId: string;
 
-  @Field(() => [InputAssets], { description: 'Example field (placeholder)' })
+  @Field(() => [InputAssets], { description: 'Example field (placeholder)', nullable: true })
   fileUrl: InputAssets[];
 
   @Field(() => [String], { description: 'Example field (placeholder)' })

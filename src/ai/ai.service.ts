@@ -69,10 +69,18 @@ export class AiService {
           },
         };
         result = await textGeneratingModel.generateContent([prompt, image]);
-        return await result.response.text();
+        return {
+          type: "text",
+          url: null,
+          content: result.response?.text?.() || "No image generated",
+        };
       } else {
         result = await textGeneratingModel.generateContent([prompt]);
-        return await result.response.text();
+        return {
+          type: "text",
+          url: null,
+          content: result.response?.text?.() || "No image generated",
+        };
       }
     } catch (error) {
       console.error("Error in modelGemini2Flash:", error);
@@ -85,7 +93,7 @@ export class AiService {
     userId: string,
     id: string,
     prompt: string = "A futuristic cityscape at night"
-  ): Promise<string | undefined> {
+  ): Promise<any | undefined> {
     try {
       const chatSession = imageGeneratingModel.startChat({
         generationConfig: {
@@ -99,6 +107,7 @@ export class AiService {
         history: [],
       });
 
+      let imageUrl: string | undefined = undefined;
       const result = await chatSession.sendMessage(prompt);
       const candidates = result.response?.candidates || [];
 
@@ -130,13 +139,13 @@ export class AiService {
 
               if (error) {
                 if (error.message === "The resource already exists") {
-                  return filePath;
+                  imageUrl = filePath;
                 }
                 console.error("Supabase upload error:", error);
                 throw new Error(error.message);
               }
 
-              return filePath;
+              imageUrl = filePath;
             } catch (err) {
               console.error("Image processing/upload failed:", err);
             }
@@ -145,7 +154,11 @@ export class AiService {
       }
 
       // If no image was returned, fallback to returning text (optional)
-      return result.response?.text?.();
+      return {
+        type: imageUrl ? "image" : "text",
+        url: imageUrl || null,
+        content: result.response?.text?.() || "No image generated",
+      };
     } catch (error) {
       console.error("Image generation failed:", error);
       throw new HttpException('Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
