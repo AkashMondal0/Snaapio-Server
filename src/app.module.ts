@@ -24,6 +24,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { CallSessionModule } from './video-call/callSession.module';
 import { ImageModule } from './image/image.module';
 import { AiModule } from './ai/ai.module';
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
   imports: [
@@ -57,7 +58,8 @@ import { AiModule } from './ai/ai.module';
     StoryModule,
     CallSessionModule,
     ImageModule,
-    AiModule
+    AiModule,
+    PaymentModule
   ],
   controllers: [AppController],
   providers: [AppService],
