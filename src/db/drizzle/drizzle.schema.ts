@@ -340,6 +340,18 @@ export const AiChatSessions = pgTable("ai_chat_sessions", {
     userIndex: index("ai_chat_sessions_user_idx").on(table.authorId), // Index for fast queries
 }));
 
+export const TransactionDetails = pgTable("transaction_details", {
+    id: uuid('id').defaultRandom().primaryKey(),
+    authorId: uuid('author_id').notNull().references(() => UserSchema.id, { onDelete: 'cascade' }),
+    features: text('features').array(),
+    title: text('title'),
+    price: text('price'),
+    mainPrice: integer('main_price').notNull(),
+    yearlyPrice: text('yearly_price'),
+}, (table) => ({
+    userIndex: index("transaction_details_user_idx").on(table.authorId), // Index for fast queries
+}));
+
 // relations
 export const userRelations = relations(UserSchema, ({ many, one }) => ({
     posts: many(PostSchema),

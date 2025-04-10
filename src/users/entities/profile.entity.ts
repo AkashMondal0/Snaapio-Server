@@ -20,4 +20,10 @@ export class Profile extends PartialType(Author) {
 
   @Field(() => [Author], { nullable: true })
   top_followers?: Author[] | null;
+
+  @Field(() => Boolean, { nullable: true })
+  isPrivate?: boolean | null;
+
+  @Field(() => Boolean, { nullable: true })
+  isVerified?: boolean | null;
 }

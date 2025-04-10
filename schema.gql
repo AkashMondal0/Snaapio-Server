@@ -105,6 +105,8 @@ type Profile {
   followingCount: Float
   friendship: Friendship
   top_followers: [Author!]
+  isPrivate: Boolean
+  isVerified: Boolean
 }
 
 type Message {
