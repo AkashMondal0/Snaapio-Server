@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { count, eq, exists, like, or, and, sql } from 'drizzle-orm';
 import { GraphQLError } from 'graphql';
 import { DrizzleProvider } from 'src/db/drizzle/drizzle.provider';
-import { FriendshipSchema, PostSchema, UserSchema } from 'src/db/drizzle/drizzle.schema';
+import { AccountSchema, FriendshipSchema, PostSchema, UserSchema } from 'src/db/drizzle/drizzle.schema';
 import { Author } from './entities/author.entity';
 import { Profile } from './entities/profile.entity';
 import { UpdateUsersInput } from './dto/update-users.input';
@@ -53,16 +53,18 @@ export class UsersService {
         profilePicture: UserSchema.profilePicture,
         bio: UserSchema.bio,
         website: UserSchema.website,
+        isVerified: AccountSchema.isVerified,
+        isPrivate: sql<boolean>`COALESCE(${AccountSchema.isPrivate}, false)`.as('isPrivate'),
         postCount: sql`COUNT(DISTINCT ${PostSchema.id}) AS postCount`,
         followerCount: sql<number>`COALESCE((
-            SELECT COUNT(${FriendshipSchema.followingUserId})
-            FROM ${FriendshipSchema}
-            WHERE ${FriendshipSchema.followingUserId} = ${UserSchema.id}
+        SELECT COUNT(${FriendshipSchema.followingUserId})
+        FROM ${FriendshipSchema}
+        WHERE ${FriendshipSchema.followingUserId} = ${UserSchema.id}
           ), 0)`.as('followers_count'),
         followingCount: sql<number>`COALESCE((
-            SELECT COUNT(${FriendshipSchema.authorUserId})
-            FROM ${FriendshipSchema}
-            WHERE ${FriendshipSchema.authorUserId} = ${UserSchema.id}
+        SELECT COUNT(${FriendshipSchema.authorUserId})
+        FROM ${FriendshipSchema}
+        WHERE ${FriendshipSchema.authorUserId} = ${UserSchema.id}
           ), 0)`.as('following_count'),
         friendship: {
           followed_by: exists(this.drizzleProvider.db.select().from(FriendshipSchema).where(
@@ -79,22 +81,23 @@ export class UsersService {
           ))
         }
       }).from(UserSchema)
-        .where(eq(UserSchema.username, username)) // <- Update the condition here
+        .where(eq(UserSchema.username, username))
         .leftJoin(PostSchema, eq(UserSchema.id, PostSchema.authorId))
-        .fullJoin(FriendshipSchema, or(
-          eq(UserSchema.id, FriendshipSchema.authorUserId),
-          eq(UserSchema.id, FriendshipSchema.followingUserId)
-        ))
-        .limit(1)
-        .groupBy(UserSchema.id)
+        .leftJoin(AccountSchema, eq(UserSchema.id, AccountSchema.id)) // Ensure correct join condition
+        .groupBy(
+          UserSchema.id,
+          AccountSchema.isVerified,
+          AccountSchema.isPrivate // Group by these fields to avoid aggregation errors
+        )
+        .limit(1);
 
-      if (!data[0]) {
+      if (!data[0].id) {
         throw new GraphQLError("An error occurred while fetching user profile", {
           extensions: { code: 'PAGE_NOT_FOUND' }
         })
-      }
+      };
 
-      return data[0] as Profile
+      return data[0] as Profile;
     } catch (error) {
       Logger.error(error)
       throw new GraphQLError('Internal Server Error', {
