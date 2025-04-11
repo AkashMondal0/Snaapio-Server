@@ -36,12 +36,12 @@ export class UsersResolver {
   }
 
   // example of rate limiting
-  // @UseGuards(GqlAuthGuard)
-  @UseGuards(GqlThrottlerGuard)
-  @Throttle({ default: { limit: 1, ttl: 60000 } })
-  @Query(() => String, { name: 'test' })
-  Test(@SessionUserGraphQl() user: Author) {
+  // @Throttle({ default: { limit: 1, ttl: 60000 } })
+  // @UseGuards(GqlThrottlerGuard)
+  @UseGuards(GqlAuthGuard)
+  @Query(() => Author, { name: 'getSession' })
+  getSessionApi(@SessionUserGraphQl() user: Author) {
     // console.log(user);
-    return "Test";
+    return user;
   }
 }

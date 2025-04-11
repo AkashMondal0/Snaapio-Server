@@ -225,7 +225,7 @@ type RequestForCall {
 type Query {
   findUserProfile(graphQLPageQuery: GraphQLPageQuery!): Profile!
   findUsersByKeyword(graphQLPageQuery: GraphQLPageQuery!): [Author!]!
-  test: String!
+  getSession: Author!
   feedTimelineConnection(graphQLPageQuery: GraphQLPageQuery!): [Post!]!
   findAllPosts(graphQLPageQuery: GraphQLPageQuery!): [Post!]!
   findOnePost(graphQLPageQuery: GraphQLPageQuery!): Post!
