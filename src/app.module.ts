@@ -25,6 +25,7 @@ import { CallSessionModule } from './video-call/callSession.module';
 import { ImageModule } from './image/image.module';
 import { AiModule } from './ai/ai.module';
 import { PaymentModule } from './payment/payment.module';
+import { PrometheusModule } from './prometheus/prometheus.module';
 
 @Module({
   imports: [
@@ -59,7 +60,8 @@ import { PaymentModule } from './payment/payment.module';
     CallSessionModule,
     ImageModule,
     AiModule,
-    PaymentModule
+    PaymentModule,
+    PrometheusModule
   ],
   controllers: [AppController],
   providers: [AppService],
