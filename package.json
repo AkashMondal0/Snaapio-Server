@@ -28,8 +28,8 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "test:load-gql": "k6 run k6-graphql.ts",
-    "test:load-rest": "k6 run k6-rest.ts"
+    "test:load-gql": "k6 run ./k6-scripts/k6-graphql.ts",
+    "test:load-rest": "k6 run /k6-scripts/k6-rest.ts"
   },
   "dependencies": {
     "@apollo/server": "^4.10.4",
@@ -52,6 +52,7 @@
     "@nestjs/throttler": "^6.1.1",
     "@nestjs/websockets": "^10.3.10",
     "@supabase/supabase-js": "^2.49.1",
+    "@willsoto/nestjs-prometheus": "^6.0.2",
     "bcryptjs": "^3.0.2",
     "drizzle-orm": "^0.31.4",
     "fastify": "^5.2.1",

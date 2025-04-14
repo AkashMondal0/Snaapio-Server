@@ -9,7 +9,7 @@ export let options = {
     { duration: '30s', target: 0 },  // Ramp-down to 0 users
   ],
   // Output Prometheus metrics
-  summaryExport: 'http://prometheus:9090/metrics',
+  // summaryExport: 'http://prometheus:9090/metrics',
 };
 
 export default function () {

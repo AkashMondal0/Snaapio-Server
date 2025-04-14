@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
@@ -25,7 +25,8 @@ import { CallSessionModule } from './video-call/callSession.module';
 import { ImageModule } from './image/image.module';
 import { AiModule } from './ai/ai.module';
 import { PaymentModule } from './payment/payment.module';
-import { PrometheusModule } from './prometheus/prometheus.module';
+import { PrometheusModule } from '@willsoto/nestjs-prometheus';
+
 
 @Module({
   imports: [
@@ -46,6 +47,12 @@ import { PrometheusModule } from './prometheus/prometheus.module';
       envFilePath: ['.env', '.env.development'],
     }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 10 }]),
+    PrometheusModule.register({
+      path: '/v1/metrics', // Endpoint for Prometheus to scrape metrics
+      defaultMetrics: {
+        enabled: true, // Enable default system metrics
+      },
+    }),
     AuthModule,
     UsersModule,
     PostModule,
@@ -60,11 +67,10 @@ import { PrometheusModule } from './prometheus/prometheus.module';
     CallSessionModule,
     ImageModule,
     AiModule,
-    PaymentModule,
-    PrometheusModule
+    PaymentModule
   ],
   controllers: [AppController],
   providers: [AppService],
 })
 
-export class AppModule { }
+export class AppModule {}
