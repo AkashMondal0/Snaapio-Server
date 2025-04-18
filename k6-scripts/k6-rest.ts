@@ -3,14 +3,14 @@ import { sleep, check } from 'k6';
 
 export let options = {
   stages: [
-    { duration: '30s', target: 300 }, // Ramp-up to 20 users
-    { duration: '1m', target: 300 },  // Stay at 20 users
-    { duration: '30s', target: 0 },  // Ramp-down to 0 users
+    { duration: '1m', target: 1000000 }, // Ramp-up to 1,000,000 users over 1 minute
+    { duration: '5m', target: 1000000 }, // Stay at 1,000,000 users for 5 minutes
+    { duration: '1m', target: 0 },       // Ramp-down to 0 users over 1 minute
   ],
 };
 
 export default function () {
-  const url = 'http://localhost:5000/v1/app'; // Replace with your actual endpoint
+  const url = 'https://snaapio-backend.skysolo.tech/v1/users/akash'; // Replace with your actual endpoint
   const res = http.get(url);
 
   check(res, {

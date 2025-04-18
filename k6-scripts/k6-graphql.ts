@@ -4,8 +4,8 @@ const BearerToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFrYX
 // Define k6 options
 export let options = {
   stages: [
-    { duration: '30s', target: 300 }, // Ramp-up to 20 users
-    { duration: '1m', target: 300 },  // Stay at 20 users
+    { duration: '30s', target: 200 }, // Ramp-up to 20 users
+    { duration: '1m', target: 200 },  // Stay at 20 users
     { duration: '30s', target: 0 },  // Ramp-down to 0 users
   ],
   // Output Prometheus metrics
@@ -13,7 +13,7 @@ export let options = {
 };
 
 export default function () {
-  const url = 'http://localhost:5000/graphql';  // Your GraphQL endpoint
+  const url = 'https://snaapio-backend.skysolo.tech/graphql';  // Your GraphQL endpoint
   const query = JSON.stringify({
     query: `query FeedTimelineConnection($graphQlPageQuery: GraphQLPageQuery!) {
     feedTimelineConnection(graphQLPageQuery: $graphQlPageQuery) {
@@ -57,9 +57,9 @@ export default function () {
     body: JSON.stringify({
       query,
       variables: {
-        "graphQlPageQuery": {
-          "limit": 100,
-          "offset": 0
+        graphQlPageQuery: {
+          limit: 100,
+          offset: 0
         }
       },
     }),

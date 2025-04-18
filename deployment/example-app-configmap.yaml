@@ -1,0 +1,7 @@
+# app-configmap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  SECRET: your-value

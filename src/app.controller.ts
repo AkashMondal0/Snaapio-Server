@@ -1,4 +1,4 @@
-import { Controller, Get, Req, Res, Version } from '@nestjs/common';
+import { Controller, Get, Logger, Req, Res, Version } from '@nestjs/common';
 import { AppService } from './app.service';
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { register } from 'prom-client';
@@ -29,6 +29,13 @@ export class AppController {
   async getMetrics(@Res() res: FastifyReply) {
     res.header('Content-Type', register.contentType);
     res.send(await register.metrics());
+  }
+
+  @Version('1')
+  @Get('/error')
+  async Test(@Res() res: FastifyReply) {
+    Logger.error("Test Error");
+    return res.send("Test Error");
   }
 
   @Version('1')
