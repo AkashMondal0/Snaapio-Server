@@ -1,4 +1,4 @@
-// delete all sql table
+-- This SQL script will delete all tables in the public schema of a PostgreSQL database.
 
 DO $$ 
 DECLARE 

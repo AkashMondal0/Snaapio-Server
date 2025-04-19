@@ -2,75 +2,184 @@
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
 </p>
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+# Snaapio Server
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Snaapio Server is a scalable and efficient backend server built using the [NestJS](https://nestjs.com/) framework. It is designed to handle high traffic, provide robust APIs, and integrate with various services like Prometheus, Loki, and Supabase.
 
-## Description
+## Features
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- **GraphQL and REST APIs**: Supports both GraphQL and REST endpoints for flexibility.
+- **Authentication**: JWT-based authentication for secure access.
+- **Monitoring**: Integrated with Prometheus and Grafana for metrics and Loki for log aggregation.
+- **Database**: Uses PostgreSQL as the primary database with Drizzle ORM.
+- **File Uploads**: Supports file uploads using Fastify Multipart.
+- **Load Testing**: Includes k6 scripts for REST and GraphQL load testing.
+- **Dockerized Deployment**: Docker and Docker Compose support for easy deployment.
+- **Horizontal Scaling**: Kubernetes configurations for scaling and deployment.
+
+## Architecture
+
+- **Framework**: NestJS with Fastify adapter for high performance.
+- **Database**: PostgreSQL with Drizzle ORM for schema management and migrations.
+- **Caching**: Redis for caching and session management.
+- **Monitoring**: Prometheus for metrics, Grafana for visualization, and Loki for log aggregation.
+- **Authentication**: JWT-based authentication with Passport.js.
+- **File Storage**: Supabase for file storage and management.
 
 ## Installation
 
+### Prerequisites
+
+- Node.js >= 18.18.0
+- Docker and Docker Compose
+- PostgreSQL and Redis instances
+
+### Steps
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/akashmondal0/snaapio-server.git
+   cd snaapio-server
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Set up environment variables:
+   - Copy the `.env` file and update the values as needed:
+     ```bash
+     cp .env.example .env
+     ```
+
+4. Build the application:
+   ```bash
+   npm run build
+   ```
+
+5. Start the server:
+   ```bash
+   npm run start
+   ```
+
+## Running the App
+
+### Development Mode
+
 ```bash
-$ npm install
+npm run dev
 ```
 
-## Running the app
+### Production Mode
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm run start:prod
 ```
 
-## Test
+### Docker Deployment
+
+1. Build the Docker image:
+   ```bash
+   npm run docker:build
+   ```
+
+2. Run the Docker container:
+   ```bash
+   npm run docker:run
+   ```
+
+3. Alternatively, use Docker Compose:
+   ```bash
+   docker-compose up -d
+   ```
+
+
+## Monitoring and Logging
+
+<p align="center">
+  <a href="http://nestjs.com/" target="blank"><img src="monitoring.png" width="800" alt="Nest Logo" /></a>
+</p>
+
+- **Prometheus**: Metrics are exposed at `/v1/metrics`.
+- **Grafana**: Access Grafana at `http://localhost:3000` (default admin password: `admin`).
+- **Loki**: Logs are aggregated and stored using Loki.
+
+## Load Testing
+
+### REST API Load Testing
+
+Run the k6 script for REST API:
+```bash
+k6 run ./k6-scripts/k6-rest.ts
+```
+
+### GraphQL API Load Testing
+
+Run the k6 script for GraphQL API:
+```bash
+k6 run ./k6-scripts/k6-graphql.ts
+```
+
+## Environment Variables
+
+Key | Description
+--- | ---
+`JWT_SECRET` | Secret key for JWT authentication
+`PG_URL` | PostgreSQL connection URL
+`REDIS_URL` | Redis connection URL
+`SUPABASE_URL` | Supabase project URL
+`SUPABASE_ANON_KEY` | Supabase anonymous key
+`GEN_AI_API_KEY` | API key for generative AI integration
+`STRIPE_PUBLISHABLE_KEY` | Stripe publishable key
+`STRIPE_SECRET_KEY` | Stripe secret key
+`LOKI_TRANSPORT` | Loki transport URL for logging
+
+<!-- ## Testing
+
+### Unit Tests
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm run test
 ```
 
-## Support
+### End-to-End Tests
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```bash
+npm run test:e2e
+```
 
-## Stay in touch
+### Test Coverage
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+```bash
+npm run test:cov
+``` -->
 
-## License
+## Deployment
 
-Nest is [MIT licensed](LICENSE).
+### Kubernetes
 
+1. Start the deployment:
+   ```bash
+   npm run deployment:start
+   ```
 
-17421
+2. Scale the deployment:
+   ```bash
+   npm run deployment:scale
+   ```
+
+3. Stop the deployment:
+   ```bash
+   npm run deployment:stop
+   ```
+
+## Stay in Touch
+
+- **Author**: [Akash Mondal](https://github.com/akashmondal0)
+- **Website**: [Portfolio](https://akashmondal0.vercel.app/)
+- **Twitter**: [akashmondal_1](https://x.com/akashmondal_1)
+
+<!-- ## License
+
+This project is [UNLICENSED](LICENSE). -->
