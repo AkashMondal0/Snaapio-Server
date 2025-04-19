@@ -1,16 +1,21 @@
 import http from 'k6/http';
 import { sleep, check } from 'k6';
 
-export let options = {
-  stages: [
-    { duration: '1m', target: 1000000 }, // Ramp-up to 1,000,000 users over 1 minute
-    { duration: '5m', target: 1000000 }, // Stay at 1,000,000 users for 5 minutes
-    { duration: '1m', target: 0 },       // Ramp-down to 0 users over 1 minute
-  ],
+export const options = {
+  scenarios: {
+    high_rps_test: {
+      executor: 'constant-arrival-rate',
+      rate: 1000, // requests per second
+      timeUnit: '1s', // per second
+      duration: '1m', // total test duration
+      preAllocatedVUs: 1000, // start with this many VUs
+      maxVUs: 20000, // scale up to this many VUs if needed
+    },
+  },
 };
 
 export default function () {
-  const url = 'https://snaapio-backend.skysolo.tech/v1/users/akash'; // Replace with your actual endpoint
+  const url = 'http://192.168.31.232:30050/v1/users/akash'; // Replace with your actual endpoint
   const res = http.get(url);
 
   check(res, {

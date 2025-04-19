@@ -30,9 +30,11 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:load-gql": "k6 run ./k6-scripts/k6-graphql.ts",
     "test:load-rest": "k6 run /k6-scripts/k6-rest.ts",
-    "deployment:start": "kubectl apply -f app-deployment.yaml",
-    "deployment:scale": "kubectl apply -f app-hpa.yaml",
-    "deployment:stop": "kubectl delete service app-service && kubectl delete deployment app-deployment"
+    "deployment:start": "kubectl apply -f ./deployment/app-configmap.yaml && kubectl apply -f ./deployment/app-deployment.yaml",
+    "deployment:restart": "kubectl rollout restart deployment/app-deployment",
+    "deployment:scale": "kubectl apply -f ./deployment/app-hpa.yaml",
+    "deployment:stop": "cd deployment && kubectl delete service app-service && kubectl delete deployment app-deployment",
+    "deployment:delete-all": "kubectl delete all --all"
   },
   "dependencies": {
     "@apollo/server": "^4.10.4",
