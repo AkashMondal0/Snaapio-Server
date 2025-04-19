@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  JWT_SECRET: ""
+  PG_URL: ""
+  REDIS_URL: ""
+  NODE_ENV: production
+  SUPABASE_URL: ""
+  SUPABASE_ANON_KEY: ""
+  GEN_AI_API_KEY: ""
+  STRIPE_PUBLISHABLE_KEY: ""
+  STRIPE_SECRET_KEY: ""
