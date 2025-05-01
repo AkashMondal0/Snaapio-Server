@@ -5,7 +5,7 @@ import { FilesInterceptor } from '@nest-lab/fastify-multer';
 import { MyAuthGuard } from 'src/auth/guard/My-jwt-auth.guard';
 import { RestApiSessionUser } from 'src/decorator/session.decorator';
 import { Author } from 'src/users/entities/author.entity';
-import { ReqFile } from './entities/image.entity';
+import { ReqFile, shortUploadType } from './entities/image.entity';
 
 @Controller('image')
 export class ImageController {

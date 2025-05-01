@@ -1,5 +1,5 @@
 
-import { Injectable, Logger } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { DrizzleProvider } from 'src/db/drizzle/drizzle.provider';
 import { count, eq, desc, exists, and, sql } from "drizzle-orm";
 import { GraphQLError } from 'graphql';
@@ -8,6 +8,7 @@ import { CreatePostInput } from './dto/create-post.input';
 import { GraphQLPageQuery } from 'src/lib/types/graphql.global.entity';
 import { Author } from 'src/users/entities/author.entity';
 import { Post } from './entities/post.entity';
+import { shortUploadType } from 'src/image/entities/image.entity';
 
 
 @Injectable()
@@ -242,4 +243,22 @@ export class PostService {
     }
   }
 
+
+  async createShort(data: shortUploadType): Promise<Post> {
+    try {
+      const _data = await this.drizzleProvider.db.insert(PostSchema).values({
+        content: data.caption ?? "",
+        title: data.title ?? "",
+        fileUrl: [data.url],
+        authorId: data.authorId,
+        status: "published",
+        type: "short",
+      }).returning();
+
+      return _data[0];
+    } catch (error) {
+      Logger.error(`Post not created:`, error)
+      throw new HttpException('Failed to create short', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  };
 }

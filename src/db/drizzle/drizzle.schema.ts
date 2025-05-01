@@ -18,7 +18,7 @@ import { Participants } from "src/video-call/dto/call-session";
 
 // enums
 export const roleEnum = pgEnum('role', ['admin', 'user', 'member']);
-
+export const postTypeEnum = pgEnum('postType', ['post', 'short','ad']);
 export const friendshipStatusEnum = pgEnum('friendship_status', ['pending', 'accepted', 'rejected', 'blocked', 'deleted']);
 export const postStatusEnum = pgEnum('post_status', ['draft', 'published', 'archived']);
 export const userThemeEnum = pgEnum('user_theme', ['light', 'dark', 'system']);
@@ -139,6 +139,7 @@ export const PostSchema = pgTable('posts', {
     status: postStatusEnum('status').notNull().default('draft'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { mode: 'date', precision: 3 }).$onUpdate(() => new Date()),
+    type: postTypeEnum('type').notNull().default('post'),
     // additional fields
     song: jsonb('song').$type<any[]>().notNull().default(sql`'[]'::jsonb`),
     tags: jsonb('tags').$type<any[]>().notNull().default(sql`'[]'::jsonb`),
