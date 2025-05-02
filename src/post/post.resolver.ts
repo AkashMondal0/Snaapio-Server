@@ -22,6 +22,12 @@ export class PostResolver {
   }
 
   @UseGuards(GqlAuthGuard)
+  @Query(() => [Post], { name: 'shortFeedTimelineConnection' })
+  shortFeedTimelineConnection(@SessionUserGraphQl() user: Author, @Args("graphQLPageQuery") limitAndOffset: GraphQLPageQuery) {
+    return this.postService.shortFeed(user, limitAndOffset);
+  }
+
+  @UseGuards(GqlAuthGuard)
   @Query(() => [Post], { name: 'findAllPosts' })
   findPosts(@SessionUserGraphQl() user: Author, @Args("graphQLPageQuery") findPosts: GraphQLPageQuery) {
     return this.postService.findPosts(user, findPosts);

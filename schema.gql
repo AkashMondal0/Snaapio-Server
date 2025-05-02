@@ -29,6 +29,7 @@ type AssetUrls {
   type: String
   id: String
   caption: String
+  shortVideoUrl: String
 }
 
 type Post {
@@ -227,6 +228,7 @@ type Query {
   findUsersByKeyword(graphQLPageQuery: GraphQLPageQuery!): [Author!]!
   getSession: Author!
   feedTimelineConnection(graphQLPageQuery: GraphQLPageQuery!): [Post!]!
+  shortFeedTimelineConnection(graphQLPageQuery: GraphQLPageQuery!): [Post!]!
   findAllPosts(graphQLPageQuery: GraphQLPageQuery!): [Post!]!
   findOnePost(graphQLPageQuery: GraphQLPageQuery!): Post!
   findAllComments(graphQLPageQuery: GraphQLPageQuery!): [Comment!]!

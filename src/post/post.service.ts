@@ -57,7 +57,11 @@ export class PostService {
         .from(PostSchema)
         .leftJoin(LikeSchema, eq(PostSchema.id, LikeSchema.postId))
         .leftJoin(CommentSchema, eq(PostSchema.id, CommentSchema.postId))
-        .where(eq(FriendshipSchema.followingUserId, PostSchema.authorId))
+        .where(and(
+          eq(FriendshipSchema.followingUserId, PostSchema.authorId),
+          eq(PostSchema.status, "published"),
+          eq(PostSchema.type, "post"),
+        ))
         .innerJoin(FriendshipSchema, eq(FriendshipSchema.authorUserId, loggedUser.id))
         .leftJoin(UserSchema, eq(PostSchema.authorId, UserSchema.id))
         .orderBy(desc(PostSchema.createdAt))
@@ -66,10 +70,78 @@ export class PostService {
           UserSchema.id,
         )
         .limit(limitAndOffset.limit ?? 12)
-        .offset(limitAndOffset.offset ?? 0)
-      return data as Post[]
+        .offset(limitAndOffset.offset ?? 0);
+
+      return data as Post[];
     } catch (error) {
-      Logger.error(error)
+      Logger.error(error);
+      throw new GraphQLError('Internal Server Error', {
+        extensions: { code: 'INTERNAL_SERVER_ERROR' }
+      });
+    }
+  }
+
+  async shortFeed(loggedUser: Author, limitAndOffset: GraphQLPageQuery): Promise<Post[]> {
+    try {
+      const data = await this.drizzleProvider.db.select({
+        id: PostSchema.id,
+        content: PostSchema.content,
+        fileUrl: PostSchema.fileUrl,
+        createdAt: PostSchema.createdAt,
+        updatedAt: PostSchema.updatedAt,
+        title: PostSchema.title,
+        // 
+        song: PostSchema.song,
+        tags: PostSchema.tags,
+        locations: PostSchema.locations,
+        country: PostSchema.country,
+        city: PostSchema.city,
+        likes: PostSchema.likes,
+        comments: PostSchema.comments,
+        // join
+        likeCount: sql`COUNT(DISTINCT ${LikeSchema.id}) AS likeCount`,
+        commentCount: sql`COUNT(DISTINCT ${CommentSchema.id}) AS commentCount`,
+        is_Liked: exists(this.drizzleProvider.db.select().from(LikeSchema).where(and(
+          eq(LikeSchema.authorId, loggedUser.id), // <-  logged user id
+          eq(LikeSchema.postId, PostSchema.id)
+        ))),
+        user: {
+          id: UserSchema.id,
+          username: UserSchema.username,
+          email: UserSchema.email,
+          profilePicture: UserSchema.profilePicture,
+          name: UserSchema.name,
+          followed_by: exists(this.drizzleProvider.db.select().from(FriendshipSchema).where(and(
+            eq(FriendshipSchema.followingUserId, loggedUser.id),// <-  logged user id
+            eq(FriendshipSchema.authorUserId, UserSchema.id)
+          ))),
+          following: exists(this.drizzleProvider.db.select().from(FriendshipSchema).where(and(
+            eq(FriendshipSchema.followingUserId, UserSchema.id),
+            eq(FriendshipSchema.authorUserId, loggedUser.id)
+          ))),
+        },
+      })
+        .from(PostSchema)
+        .leftJoin(LikeSchema, eq(PostSchema.id, LikeSchema.postId))
+        .leftJoin(CommentSchema, eq(PostSchema.id, CommentSchema.postId))
+        .where(and(
+          eq(FriendshipSchema.followingUserId, PostSchema.authorId),
+          eq(PostSchema.status, "published"),
+          eq(PostSchema.type, "short"),
+        ))
+        .innerJoin(FriendshipSchema, eq(FriendshipSchema.authorUserId, loggedUser.id))
+        .leftJoin(UserSchema, eq(PostSchema.authorId, UserSchema.id))
+        .orderBy(desc(PostSchema.createdAt))
+        .groupBy(
+          PostSchema.id,
+          UserSchema.id,
+        )
+        .limit(limitAndOffset.limit ?? 12)
+        .offset(limitAndOffset.offset ?? 0);
+
+      return data as Post[];
+    } catch (error) {
+      Logger.error(error);
       throw new GraphQLError('Internal Server Error', {
         extensions: { code: 'INTERNAL_SERVER_ERROR' }
       });
@@ -249,7 +321,7 @@ export class PostService {
       const _data = await this.drizzleProvider.db.insert(PostSchema).values({
         content: data.caption ?? "",
         title: data.title ?? "",
-        fileUrl: [data.url],
+        fileUrl: [{ shortVideoUrl: data.url }],
         authorId: data.authorId,
         status: "published",
         type: "short",
