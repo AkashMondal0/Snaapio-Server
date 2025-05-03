@@ -54,6 +54,7 @@ type Post {
   likes: [Author!]
   top_Like: [Author!]
   status: [String!]
+  type: String
 }
 
 type Author {

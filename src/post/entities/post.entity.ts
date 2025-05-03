@@ -110,4 +110,7 @@ export class Post {
 
   @Field(() => [String], { nullable: true })
   status?: PostStatus | string
+
+  @Field(() => String, { nullable: true })
+  type?: string | null;
 }

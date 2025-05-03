@@ -154,6 +154,7 @@ export class PostService {
         id: PostSchema.id,
         content: PostSchema.content,
         fileUrl: PostSchema.fileUrl,
+        type: PostSchema.type,
         likeCount: sql`COUNT(DISTINCT ${LikeSchema.id}) AS likeCount`,
         commentCount: sql`COUNT(DISTINCT ${CommentSchema.id}) AS commentCount`,
         createdAt: PostSchema.createdAt,
@@ -189,6 +190,7 @@ export class PostService {
           country: PostSchema.country,
           city: PostSchema.city,
           likes: PostSchema.likes,
+          type: PostSchema.type,
           comments: PostSchema.comments,
           // join
           likeCount: sql`COUNT(DISTINCT ${LikeSchema.id}) AS likeCount`,
