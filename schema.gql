@@ -30,6 +30,7 @@ type AssetUrls {
   id: String
   caption: String
   shortVideoUrl: String
+  shortVideoThumbnail: String
 }
 
 type Post {

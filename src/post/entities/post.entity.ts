@@ -44,6 +44,9 @@ export class AssetUrls {
 
   @Field(() => String, { nullable: true })
   shortVideoUrl?: string | null;
+
+  @Field(() => String, { nullable: true })
+  shortVideoThumbnail?: string | null;
 }
 
 @ObjectType()

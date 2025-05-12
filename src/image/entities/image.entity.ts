@@ -13,6 +13,7 @@ export type ReqFile = {
 export type shortUploadType = {
 	url: string,
 	title: any,
-	caption: any,
-	authorId: Author["id"]
+	content: any,
+	authorId: Author["id"],
+	thumbnailUrl: string
 }

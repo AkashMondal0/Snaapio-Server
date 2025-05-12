@@ -182,6 +182,7 @@ export class PostService {
         const _data = await this.drizzleProvider.db.select({
           id: PostSchema.id,
           content: PostSchema.content,
+          title: PostSchema.title,
           fileUrl: PostSchema.fileUrl,
           // 
           song: PostSchema.song,
@@ -317,17 +318,20 @@ export class PostService {
     }
   }
 
-
   async createShort(data: shortUploadType): Promise<Post> {
     try {
       const _data = await this.drizzleProvider.db.insert(PostSchema).values({
-        content: data.caption ?? "",
+        content: data.content ?? "",
         title: data.title ?? "",
-        fileUrl: [{ shortVideoUrl: data.url }],
+        fileUrl: [{ shortVideoUrl: data.url, shortVideoThumbnail: data.thumbnailUrl }],
         authorId: data.authorId,
         status: "published",
         type: "short",
       }).returning();
+
+      if (!_data[0]) {
+        throw new GraphQLError('Post not created')
+      };
 
       return _data[0];
     } catch (error) {
