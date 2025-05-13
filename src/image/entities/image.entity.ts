@@ -1,4 +1,6 @@
-export class Image {}
+import { Author } from "src/users/entities/author.entity";
+
+export class Image { }
 export type ReqFile = {
 	fieldname: string,
 	originalname: string,
@@ -6,4 +8,12 @@ export type ReqFile = {
 	mimetype: string,
 	buffer: Buffer,
 	size: number
-  }
+}
+
+export type shortUploadType = {
+	url: string,
+	title: any,
+	content: any,
+	authorId: Author["id"],
+	thumbnailUrl: string
+}

@@ -41,6 +41,12 @@ export class AssetUrls {
 
   @Field(() => String, { nullable: true })
   caption?: string | null;
+
+  @Field(() => String, { nullable: true })
+  shortVideoUrl?: string | null;
+
+  @Field(() => String, { nullable: true })
+  shortVideoThumbnail?: string | null;
 }
 
 @ObjectType()
@@ -107,4 +113,7 @@ export class Post {
 
   @Field(() => [String], { nullable: true })
   status?: PostStatus | string
+
+  @Field(() => String, { nullable: true })
+  type?: string | null;
 }

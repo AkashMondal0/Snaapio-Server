@@ -1,6 +1,8 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { Body, Controller, Get, HttpException, HttpStatus, Logger, Param, Post, Query, Res, UploadedFiles, UseGuards, UseInterceptors, } from '@nestjs/common';
 import { PostService } from './post.service';
+import { MyAuthGuard } from 'src/auth/guard/My-jwt-auth.guard';
+import { shortUploadType } from 'src/image/entities/image.entity';
 @Controller({
     path: 'post',
     version: ['1']
@@ -21,6 +23,12 @@ export class PostController {
             throw new HttpException('Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
+    }
+
+    @Post('/create-short')
+    async createShort(@Body() body: shortUploadType) {
+        const data = await this.postService.createShort(body)
+        return data;
     }
 
     // @Put()
