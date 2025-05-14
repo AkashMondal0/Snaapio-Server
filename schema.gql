@@ -70,6 +70,8 @@ type Author {
   website: [String!]
   lastStatusUpdate: String
   fileUrl: [AssetUrls!]
+  privateKey: String
+  publicKey: String
 }
 
 type Friendship {
@@ -103,6 +105,8 @@ type Profile {
   website: [String!]
   lastStatusUpdate: String
   fileUrl: [AssetUrls!]
+  privateKey: String
+  publicKey: String
   postCount: Float
   followerCount: Float
   followingCount: Float
@@ -112,11 +116,18 @@ type Profile {
   isVerified: Boolean
 }
 
+type KeyValue {
+  key: String
+  value: String
+}
+
 type Message {
   id: String!
   conversationId: String!
   authorId: String
-  content: String!
+  content: String
+  e_key: [KeyValue!]
+  iv: String
   user: Author
   fileUrl: [AssetUrls!]
   deleted: Boolean
@@ -128,8 +139,8 @@ type Message {
 
 type Conversation {
   id: String!
-  members: [String!]!
-  authorId: String!
+  members: [String!]
+  authorId: String
   messages: [Message!]
   user: Author
   isGroup: Boolean
@@ -389,6 +400,14 @@ input CreateMessageInput {
 
   """Example field (placeholder)"""
   members: [String!]!
+
+  """Example field (placeholder)"""
+  membersPublicKey: [MembersPublicKey!]!
+}
+
+input MembersPublicKey {
+  authorId: String!
+  publicKey: String!
 }
 
 input CreateMessageInputSeen {

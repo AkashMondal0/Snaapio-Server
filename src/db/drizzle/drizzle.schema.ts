@@ -14,11 +14,12 @@ import {
 } from "drizzle-orm/pg-core";
 import { AiChatMessages } from "src/ai/entities/ai.entity";
 import { generateRandomString } from "src/lib/id-generate";
+import { EncryptedKeys } from "src/message/entities/message.entity";
 import { Participants } from "src/video-call/dto/call-session";
 
 // enums
 export const roleEnum = pgEnum('role', ['admin', 'user', 'member']);
-export const postTypeEnum = pgEnum('postType', ['post', 'short','ad']);
+export const postTypeEnum = pgEnum('postType', ['post', 'short', 'ad']);
 export const friendshipStatusEnum = pgEnum('friendship_status', ['pending', 'accepted', 'rejected', 'blocked', 'deleted']);
 export const postStatusEnum = pgEnum('post_status', ['draft', 'published', 'archived']);
 export const userThemeEnum = pgEnum('user_theme', ['light', 'dark', 'system']);
@@ -37,6 +38,8 @@ export const UserSchema = pgTable('users', {
         .array()
         .notNull()
         .default(sql`'{}'::text[]`),
+    publicKey: text('public_key').notNull(),
+    privateKey: text('private_key').notNull(),
 }, (users) => ({
     uniqueIdx: uniqueIndex('unique_idx').on(users.email),
     usernameIdx: uniqueIndex('username_idx').on(users.username),
@@ -260,11 +263,12 @@ export const commentReplySchema = pgTable('comment_replies', {
     commentIdIdx: index('reply_comment_id_idx').on(replies.commentId),
     authorCommentIdx: index('reply_author_comment_idx').on(replies.authorId, replies.commentId)
 }));
-
 // chat
 export const MessagesSchema = pgTable('messages', {
     id: uuid('id').defaultRandom().primaryKey(),
     content: text('content').notNull(),
+    e_key: jsonb('e_key').$type<EncryptedKeys>().notNull(),
+    iv: text('iv').notNull(),
     fileUrl: jsonb('file_url').$type<any[]>().notNull().default(sql`'[]'::jsonb`),
     authorId: uuid('author_id').notNull().references(() => UserSchema.id, { onDelete: 'cascade' }),
     deleted: boolean('deleted').default(false),

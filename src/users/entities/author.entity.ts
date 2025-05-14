@@ -35,4 +35,10 @@ export class Author {
 
   @Field(() => [AssetUrls], { nullable: true, defaultValue: [] })
   fileUrl?: AssetUrls[] | null;
+
+  @Field(() => String, { nullable: true })
+  privateKey?: string
+  
+  @Field(() => String, { nullable: true })
+  publicKey?: string
 }

@@ -6,10 +6,10 @@ export class Conversation {
   @Field(() => String)
   id: string;
 
-  @Field(() => [String])
+  @Field(() => [String],{ nullable: true })
   members?: string[];
 
-  @Field(() => String)
+  @Field(() => String,{ nullable: true })
   authorId: string;
 
   @Field(() => [Message],{ nullable: true })

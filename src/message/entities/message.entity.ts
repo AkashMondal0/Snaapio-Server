@@ -2,6 +2,19 @@ import { ObjectType, Field } from '@nestjs/graphql';
 import { AssetUrls } from 'src/post/entities/post.entity';
 import { Author } from 'src/users/entities/author.entity';
 
+export type EncryptedKeys = {
+  [key: string]: string;
+};
+
+@ObjectType()
+export class KeyValue {
+  @Field(() => String, { nullable: true })
+  key?: string;
+
+  @Field(() => String, { nullable: true })
+  value?: string;
+}
+
 @ObjectType()
 export class Message {
   @Field(() => String)
@@ -13,8 +26,14 @@ export class Message {
   @Field(() => String, { nullable: true })
   authorId: string | null;
 
-  @Field()
+  @Field(() => String, { nullable: true })
   content: string;
+
+  @Field(() => [KeyValue], { nullable: true })
+  e_key?: KeyValue[] | null | any;
+
+  @Field(() => String, { nullable: true })
+  iv?: string;
 
   @Field(() => Author, { nullable: true })
   user?: Author | null;
