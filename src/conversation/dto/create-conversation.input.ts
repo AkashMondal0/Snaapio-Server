@@ -1,4 +1,5 @@
 import { InputType, Field } from '@nestjs/graphql';
+import { GraphQLJSONObject } from 'graphql-type-json';
 
 @InputType()
 export class CreateConversationInput {
@@ -19,4 +20,7 @@ export class CreateConversationInput {
 
   @Field(() => String, { description: 'Example field (placeholder)', nullable: true })
   groupImage: string;
+
+  @Field(() => GraphQLJSONObject, { nullable: true })
+  members_e_key?: Record<string, string> | any;
 }

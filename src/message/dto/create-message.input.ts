@@ -1,4 +1,5 @@
 import { InputType, Field } from '@nestjs/graphql';
+import { GraphQLJSONObject } from 'graphql-type-json';
 import { InputAssets } from 'src/post/dto/create-post.input';
 
 @InputType()
@@ -18,8 +19,8 @@ export class CreateMessageInput {
   @Field(() => [String], { description: 'Example field (placeholder)' })
   members: string[];
 
-  @Field(() => [MembersPublicKey], { description: 'Example field (placeholder)' })
-  membersPublicKey: MembersPublicKey[];
+  @Field(() => GraphQLJSONObject, { description: 'Example field (placeholder)' })
+  membersPublicKey:  Record<string, string>;
 }
 
 @InputType()

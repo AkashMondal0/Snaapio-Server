@@ -25,6 +25,7 @@ export class UsersService {
         profilePicture: UserSchema.profilePicture,
         bio: UserSchema.bio,
         website: UserSchema.website,
+        publicKey: UserSchema.publicKey,
       }).from(UserSchema).where(
         or(
           like(UserSchema.username, `%${keywordForUsername}%`),

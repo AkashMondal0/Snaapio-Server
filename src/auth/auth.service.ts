@@ -13,7 +13,9 @@ export interface SignUpAndSignInResponse {
   id: string,
   username: string,
   email: string,
-  accessToken: string
+  accessToken: string,
+  publicKey: string,
+  privateKey: string
 }
 
 @Injectable()
@@ -58,10 +60,12 @@ export class AuthService {
       priority: "medium",
       sameSite: "lax",
       secure: true
-    })
+    });
     return {
       ...userinfo,
       accessToken: accessToken,
+      privateKey: user.privateKey,
+      publicKey: user.publicKey,
     };
   }
 
@@ -102,7 +106,12 @@ export class AuthService {
       secure: true
     })
 
-    return { ...userinfo, accessToken: accessToken }
+    return {
+      ...userinfo,
+      accessToken: accessToken,
+      privateKey: newUser.privateKey,
+      publicKey: newUser.publicKey,
+    }
   }
 
   async signOut(request: FastifyRequest, response: FastifyReply): Promise<string | HttpException> {

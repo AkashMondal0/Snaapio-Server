@@ -1,10 +1,20 @@
-import { ObjectType, Field } from '@nestjs/graphql';
+import { ObjectType, Field, InputType } from '@nestjs/graphql';
+import { GraphQLJSONObject } from 'graphql-type-json';
 import { AssetUrls } from 'src/post/entities/post.entity';
 import { Author } from 'src/users/entities/author.entity';
 
 export type EncryptedKeys = {
   [key: string]: string;
 };
+
+@InputType()
+export class KeyValueInput {
+  @Field(() => String, { nullable: true })
+  key?: string;
+
+  @Field(() => String, { nullable: true })
+  value?: string;
+}
 
 @ObjectType()
 export class KeyValue {
@@ -29,8 +39,8 @@ export class Message {
   @Field(() => String, { nullable: true })
   content: string;
 
-  @Field(() => [KeyValue], { nullable: true })
-  e_key?: KeyValue[] | null | any;
+  @Field(() => GraphQLJSONObject, { nullable: true })
+  members_e_key?: Record<string, string>;
 
   @Field(() => String, { nullable: true })
   iv?: string;

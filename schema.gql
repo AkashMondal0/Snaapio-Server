@@ -116,17 +116,12 @@ type Profile {
   isVerified: Boolean
 }
 
-type KeyValue {
-  key: String
-  value: String
-}
-
 type Message {
   id: String!
   conversationId: String!
   authorId: String
   content: String
-  e_key: [KeyValue!]
+  members_e_key: JSONObject
   iv: String
   user: Author
   fileUrl: [AssetUrls!]
@@ -137,9 +132,15 @@ type Message {
   members: [String!]
 }
 
+"""
+The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSONObject
+
 type Conversation {
   id: String!
   members: [String!]
+  membersPublicKey: JSONObject
   authorId: String
   messages: [Message!]
   user: Author
@@ -265,6 +266,7 @@ type Query {
 
 input GraphQLPageQuery {
   id: String
+  privateKey: String
   offset: Float
   limit: Float
 }
@@ -383,6 +385,7 @@ input CreateConversationInput {
 
   """Example field (placeholder)"""
   groupImage: String
+  members_e_key: JSONObject
 }
 
 input CreateMessageInput {
@@ -402,12 +405,7 @@ input CreateMessageInput {
   members: [String!]!
 
   """Example field (placeholder)"""
-  membersPublicKey: [MembersPublicKey!]!
-}
-
-input MembersPublicKey {
-  authorId: String!
-  publicKey: String!
+  membersPublicKey: JSONObject!
 }
 
 input CreateMessageInputSeen {

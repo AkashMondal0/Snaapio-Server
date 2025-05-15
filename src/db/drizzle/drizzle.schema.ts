@@ -285,6 +285,7 @@ export const MessagesSchema = pgTable('messages', {
 export const ConversationSchema = pgTable('conversations', {
     id: text('id').$defaultFn(() => generateRandomString({ length: 10, type: "lowernumeric" })).primaryKey(),
     members: uuid('members').array().notNull(),
+    members_e_key: jsonb('members_e_key').$type<EncryptedKeys>().notNull(),
     // direct
     userId: uuid('user_id'),
     authorId: uuid('author_id').notNull().references(() => UserSchema.id, { onDelete: 'cascade' }),
