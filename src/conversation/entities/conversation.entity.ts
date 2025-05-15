@@ -29,6 +29,9 @@ export class Conversation {
   @Field(() => String, { nullable: true })
   lastMessageContent: string | null;
 
+  @Field(() => Message, { nullable: true })
+  lastMessage?: Message
+
   @Field(() => Number, { nullable: true })
   totalUnreadMessagesCount?: number | null;
 

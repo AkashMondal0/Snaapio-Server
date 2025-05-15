@@ -146,6 +146,7 @@ type Conversation {
   user: Author
   isGroup: Boolean
   lastMessageContent: String
+  lastMessage: Message
   totalUnreadMessagesCount: Float
   lastMessageCreatedAt: DateTime
   createdAt: DateTime

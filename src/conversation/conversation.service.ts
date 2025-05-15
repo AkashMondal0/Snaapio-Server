@@ -8,6 +8,7 @@ import { ConversationSchema, MessagesSchema, UserSchema } from 'src/db/drizzle/d
 import { Conversation } from './entities/conversation.entity';
 import { Author } from 'src/users/entities/author.entity';
 import { GraphQLPageQuery } from 'src/lib/types/graphql.global.entity';
+import { decryptForUser } from 'src/lib/crypto/encrypt.decrypt';
 @Injectable()
 export class ConversationService {
   constructor(
@@ -74,7 +75,11 @@ export class ConversationService {
   }
 
   async findAll(user: Author, graphQLPageQuery: GraphQLPageQuery): Promise<Conversation[] | GraphQLError> {
-
+    if (!graphQLPageQuery?.privateKey) {
+      throw new GraphQLError("privateKey not found", {
+        extensions: { code: 'KEY_NOT_FOUND' }
+      })
+    };
     const data = await this.drizzleProvider.db.select({
       id: ConversationSchema.id,
       authorId: ConversationSchema.authorId,
@@ -97,6 +102,7 @@ export class ConversationService {
       },
       // find last message
       lastMessageContent: MessagesSchema.content,
+      lastMessage: MessagesSchema,
       lastMessageCreatedAt: MessagesSchema.createdAt,
       totalUnreadMessagesCount: sql`(SELECT COUNT(*) 
         FROM ${MessagesSchema}
@@ -123,7 +129,19 @@ export class ConversationService {
       .limit(graphQLPageQuery.limit ?? 12)
       .offset(graphQLPageQuery.offset ?? 0);
 
-    return data as Conversation[]
+    const newData = data.map((con) => {
+      return {
+        ...con,
+        lastMessageContent: con.lastMessage ? decryptForUser(
+          con.lastMessage.content,
+          con.lastMessage.e_key[user.id], // encryptedKey
+          con.lastMessage.iv,
+          graphQLPageQuery.privateKey,
+        ).toString() : "..."
+      }
+    })
+
+    return newData as Conversation[]
   }
 
   async findOne(user: Author, graphQLPageQuery: GraphQLPageQuery): Promise<Conversation | GraphQLError> {

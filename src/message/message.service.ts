@@ -91,8 +91,10 @@ export class MessageService {
       })
       .returning();
 
-    this.eventProvider.publishMessage(event_name.conversation.message, { ...data[0], members: createMessageInput.members })
-    return data[0];
+    const rawData: Message = { ...data[0], content: createMessageInput.content };
+
+    this.eventProvider.publishMessage(event_name.conversation.message, { ...rawData, members: createMessageInput.members })
+    return rawData;
   }
 
   async seenMessages(user: Author, conversationId: CreateMessageInputSeen): Promise<boolean> {
