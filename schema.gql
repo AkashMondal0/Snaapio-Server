@@ -116,6 +116,30 @@ type Profile {
   isVerified: Boolean
 }
 
+type Notification {
+  id: String!
+  type: String!
+  authorId: String!
+  recipientId: String!
+  postId: String
+  author: Author
+  recipient: Author
+  post: Post
+  comment: Comment
+  commentId: String
+  storyId: String
+  reelId: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  seen: String
+}
+
+type UnReadNotification {
+  unreadCommentCount: Float
+  unreadPostCount: Float
+  unreadChatCount: Float
+}
+
 type Message {
   id: String!
   conversationId: String!
@@ -154,30 +178,6 @@ type Conversation {
   groupName: String
   groupImage: String
   groupDescription: String
-}
-
-type Notification {
-  id: String!
-  type: String!
-  authorId: String!
-  recipientId: String!
-  postId: String
-  author: Author
-  recipient: Author
-  post: Post
-  comment: Comment
-  commentId: String
-  storyId: String
-  reelId: String
-  createdAt: DateTime
-  updatedAt: DateTime
-  seen: String
-}
-
-type UnReadNotification {
-  unreadCommentCount: Float
-  unreadPostCount: Float
-  unreadChatCount: Float
 }
 
 type Story {
@@ -248,15 +248,15 @@ type Query {
   findOnePost(graphQLPageQuery: GraphQLPageQuery!): Post!
   findAllComments(graphQLPageQuery: GraphQLPageQuery!): [Comment!]!
   findAllLikes(graphQLPageQuery: GraphQLPageQuery!): [Author!]!
+  findAllNotifications(graphQLPageQuery: GraphQLPageQuery!): [Notification!]!
+  unseenNotifications: UnReadNotification!
+  unseenMessageNotifications: Float!
   findAllConversation(graphQLPageQuery: GraphQLPageQuery!): [Conversation!]!
   findOneConversation(graphQLPageQuery: GraphQLPageQuery!): Conversation!
   findAllMessages(graphQLPageQuery: GraphQLPageQuery!): [Message!]!
   typingStatus(typingStatusInput: TypingStatusInput!): String!
   findAllFollower(graphQLPageQuery: GraphQLPageQuery!): [Author!]!
   findAllFollowing(graphQLPageQuery: GraphQLPageQuery!): [Author!]!
-  findAllNotifications(graphQLPageQuery: GraphQLPageQuery!): [Notification!]!
-  unseenNotifications: UnReadNotification!
-  unseenMessageNotifications: Float!
   findStory(graphQLPageQuery: GraphQLPageQuery!): [Story!]!
   findAllStory(graphQLPageQuery: GraphQLPageQuery!): [Story!]!
   findAllHighlight(graphQLPageQuery: GraphQLPageQuery!): [Highlight!]!
@@ -287,14 +287,12 @@ type Mutation {
   updateComment(input: UpdateCommentInput!): Comment!
   destroyComment(id: String!): Comment!
   Like(input: CreateLikeInput!): Boolean!
+  markAsSeenNotification: Boolean!
   createConversation(createConversationInput: CreateConversationInput!): Conversation!
   createMessage(createMessageInput: CreateMessageInput!): Message!
   seenMessages(createMessageInputSeen: CreateMessageInputSeen!): Message!
   createFriendship(createFriendshipInput: CreateFriendshipInput!): Friendship!
   destroyFriendship(destroyFriendship: DestroyFriendship!): Friendship!
-  createNotification(createNotificationInput: CreateNotificationInput!): Notification!
-  destroyNotification(destroyNotificationInput: CreateNotificationInput!): Notification!
-  markAsSeenNotification: Boolean!
   createStory(createStoryInput: CreateStoryInput!): Story!
   createHighlight(createHighlightInput: createHighlightInput!): Highlight!
   createCallSession(participantInput: ParticipantsInput!): CallSession!
@@ -366,6 +364,8 @@ input UpdateCommentInput {
 input CreateLikeInput {
   id: String!
   like: Boolean!
+  recipientId: String!
+  postUrl: String!
 }
 
 input CreateConversationInput {
@@ -427,28 +427,6 @@ input DestroyFriendship {
   authorUserId: String!
   followingUsername: String!
   followingUserId: String!
-}
-
-input CreateNotificationInput {
-  type: String!
-  authorId: String!
-  recipientId: String!
-  postId: String
-  commentId: String
-  storyId: String
-  reelId: String
-  author: AuthorInput!
-  post: PostInput!
-}
-
-input AuthorInput {
-  username: String!
-  profilePicture: String
-}
-
-input PostInput {
-  id: String!
-  fileUrl: String
 }
 
 input CreateStoryInput {

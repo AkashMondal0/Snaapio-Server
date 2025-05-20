@@ -8,31 +8,52 @@ import { and, arrayContains, desc, eq, sql } from 'drizzle-orm';
 import { GraphQLPageQuery } from 'src/lib/types/graphql.global.entity';
 import { EventGateway } from 'src/event/event.gateway';
 import { event_name } from 'src/configs/connection.name';
+import Expo from 'expo-server-sdk';
+import expo from 'src/lib/expo';
+import { RedisProvider } from 'src/db/redis/redis.provider';
 
 @Injectable()
 export class NotificationService {
   constructor(
     private readonly drizzleProvider: DrizzleProvider,
-    private readonly eventProvider: EventGateway
+    private readonly eventProvider: EventGateway,
+    private readonly redisProvider: RedisProvider
   ) { }
 
-  async create(user: Author, createNotificationInput: CreateNotificationInput): Promise<Notification> {
+  async sentLikeOnPostNotification(user: Author, postId: string, recipientId: string, postUrl: string): Promise<Notification> {
     const data = await this.drizzleProvider.db.insert(NotificationSchema)
       .values({
         authorId: user.id,
-        postId: createNotificationInput.postId,
-        type: createNotificationInput.type,
-        commentId: createNotificationInput.commentId,
-        storyId: createNotificationInput.storyId,
-        reelId: createNotificationInput.reelId,
-        recipientId: createNotificationInput.recipientId,
-      }).returning()
+        recipientId: recipientId,
+        postId: postId,
+        type: "like",
+      }).returning();
+
     const notificationData = {
       ...data[0],
-      post: createNotificationInput.post,
-      author: createNotificationInput.author,
+      postUrl: {
+        id: postId,
+        url: ""
+      },
+      author: user,
+    };
+
+    const ids = await this.eventProvider.findUserBySocketId([recipientId]);
+    if (ids && ids.length > 0) {
+      this.eventProvider.publishMessage(event_name.notification.post, { ...notificationData, members: [recipientId] });
+    } else {
+      const userNotificationId = await this.redisProvider.client.get(`notification:${recipientId}`)
+      if (userNotificationId) {
+        // console.log(userNotificationId)
+        this.ExpNotificationsSender(userNotificationId, {
+          title: `${user.name}`,
+          body: `${user.name} liked your post`,
+          channelId: postId,
+          data: { postId }
+        })
+      }
     }
-    this.eventProvider.publishMessage(event_name.notification.post, { ...notificationData, members: [createNotificationInput.recipientId] })
+
     return data[0] as Notification;
   }
 
@@ -78,14 +99,14 @@ export class NotificationService {
     return data
   }
 
-  async remove(user: Author, destroyNotificationInput: CreateNotificationInput): Promise<any> {
+  async sentRemoveLikeOnPostNotification(userId: string, postId: string, recipientId: string): Promise<any> {
     await this.drizzleProvider.db.delete(NotificationSchema)
       .where(
         and(
-          eq(NotificationSchema.authorId, user.id),
-          eq(NotificationSchema.postId, destroyNotificationInput.postId),
-          eq(NotificationSchema.type, destroyNotificationInput.type),
-          eq(NotificationSchema.recipientId, destroyNotificationInput.recipientId)
+          eq(NotificationSchema.authorId, userId),
+          eq(NotificationSchema.postId, postId),
+          eq(NotificationSchema.type, "like"),
+          eq(NotificationSchema.recipientId, recipientId)
         )
       )
     return true
@@ -161,5 +182,51 @@ export class NotificationService {
     }
 
     return data.filter((item) => Number(item.totalUnreadCount) !== 0).length || 0
+  }
+
+  async ExpNotificationsSender(token: string, data: {
+    title: string,
+    body: string,
+    channelId?: string,
+    data?: any,
+    richContent?: {
+      image: string,
+    },
+  }): Promise<void> {
+    // const { pushToken, title, body, imageUrl } = request.body as any;
+    // Validate push token
+    if (!Expo.isExpoPushToken(token)) {
+      return;// response.send(`Invalid Expo push token`);
+    }
+
+    const message = {
+      to: token,
+      sound: 'default',
+      title: data.title,
+      body: data.body,
+      channelId: data.channelId,
+      data: data.data,
+      richContent: data.richContent,
+    };
+
+    try {
+      const chunks = expo.chunkPushNotifications([message]);
+
+      const tickets: any = [];
+
+      for (let chunk of chunks) {
+        try {
+          const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+          tickets.push(...ticketChunk);
+        } catch (error) {
+          console.error('Chunk error:', error);
+          return; // response.send(`Failed to send notification`);
+        }
+      }
+      return; // response.send(`Expo push token success`);
+    } catch (err) {
+      console.error('Notification error:', err);
+      return;// response.send(`Failed to send notification`);
+    }
   }
 }
