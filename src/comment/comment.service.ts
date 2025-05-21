@@ -9,10 +9,13 @@ import { eq } from 'drizzle-orm';
 import { GraphQLPageQuery } from 'src/lib/types/graphql.global.entity';
 import { Author } from 'src/users/entities/author.entity';
 import { Comment } from './entities/comment.entity';
+import { NotificationService } from 'src/notification/notification.service';
 
 @Injectable()
 export class CommentService {
-  constructor(private readonly drizzleProvider: DrizzleProvider) { }
+  constructor(private readonly drizzleProvider: DrizzleProvider,
+    private readonly notificationService: NotificationService
+  ) { }
 
   async create(loggedUser: Author, createCommentInput: CreateCommentInput): Promise<Comment | GraphQLError> {
     try {
@@ -21,10 +24,14 @@ export class CommentService {
         content: createCommentInput.content,
         authorId: loggedUser.id
       }).returning();
-      return {
+
+      const rawData = {
         ...new_comment[0],
         user: loggedUser
       }
+      // send notification
+      this.notificationService.sendCommentOnPostNotification(loggedUser, rawData, createCommentInput.authorId)
+      return rawData;
     } catch (error) {
       Logger.error(error)
       if (error instanceof GraphQLError) {

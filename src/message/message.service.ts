@@ -11,13 +11,16 @@ import { event_name } from 'src/configs/connection.name';
 import { decryptForUser, encryptForParticipants } from 'src/lib/crypto/encrypt.decrypt';
 import { RedisProvider } from 'src/db/redis/redis.provider';
 import { GraphQLError } from 'graphql';
+import { NotificationService } from 'src/notification/notification.service';
 
 @Injectable()
 export class MessageService {
   constructor(
     private readonly drizzleProvider: DrizzleProvider,
     private readonly eventProvider: EventGateway,
-    // private readonly redisProvider: RedisProvider
+    private readonly notificationService: NotificationService,
+    private readonly redisProvider: RedisProvider
+
   ) { }
   async findAll(user: Author, graphQLPageQuery: GraphQLPageQuery): Promise<Message[] | GraphQLError> {
     if (!graphQLPageQuery?.privateKey) {
@@ -93,7 +96,23 @@ export class MessageService {
 
     const rawData: Message = { ...data[0], content: createMessageInput.content };
 
-    this.eventProvider.publishMessage(event_name.conversation.message, { ...rawData, members: createMessageInput.members })
+    const recipientId = createMessageInput.members.filter((i) => i !== user.id);
+    const ids = await this.eventProvider.findUserBySocketId([recipientId[0]]);
+
+    if (ids && ids.length > 0) {
+      this.eventProvider.publishMessage(event_name.conversation.message, { ...rawData, members: createMessageInput.members })
+    } else {
+      const userNotificationId = await this.redisProvider.client.get(`notification:${recipientId}`)
+      if (userNotificationId) {
+        // console.log(userNotificationId)
+        this.notificationService.ExpNotificationsSender(userNotificationId, {
+          title: `${user.name}`,
+          body: rawData.content,
+          channelId: rawData.conversationId,
+          data: { url: `snaapio://message/${rawData.conversationId}` }
+        })
+      }
+    }
     return rawData;
   }
 

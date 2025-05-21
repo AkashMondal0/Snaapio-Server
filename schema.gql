@@ -247,10 +247,10 @@ type Query {
   findAllPosts(graphQLPageQuery: GraphQLPageQuery!): [Post!]!
   findOnePost(graphQLPageQuery: GraphQLPageQuery!): Post!
   findAllComments(graphQLPageQuery: GraphQLPageQuery!): [Comment!]!
-  findAllLikes(graphQLPageQuery: GraphQLPageQuery!): [Author!]!
   findAllNotifications(graphQLPageQuery: GraphQLPageQuery!): [Notification!]!
   unseenNotifications: UnReadNotification!
   unseenMessageNotifications: Float!
+  findAllLikes(graphQLPageQuery: GraphQLPageQuery!): [Author!]!
   findAllConversation(graphQLPageQuery: GraphQLPageQuery!): [Conversation!]!
   findOneConversation(graphQLPageQuery: GraphQLPageQuery!): Conversation!
   findAllMessages(graphQLPageQuery: GraphQLPageQuery!): [Message!]!
@@ -286,8 +286,8 @@ type Mutation {
   createComment(input: CreateCommentInput!): Comment!
   updateComment(input: UpdateCommentInput!): Comment!
   destroyComment(id: String!): Comment!
-  Like(input: CreateLikeInput!): Boolean!
   markAsSeenNotification: Boolean!
+  Like(input: CreateLikeInput!): Boolean!
   createConversation(createConversationInput: CreateConversationInput!): Conversation!
   createMessage(createMessageInput: CreateMessageInput!): Message!
   seenMessages(createMessageInputSeen: CreateMessageInputSeen!): Message!

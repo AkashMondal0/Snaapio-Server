@@ -84,7 +84,7 @@ export class LikeService {
         ));
 
         // delete notification 
-        await this.notificationService.sentRemoveLikeOnPostNotification(sessionUser.id, input.id, input.recipientId);
+        await this.notificationService.sendRemoveLikeOnPostNotification(sessionUser.id, input.id, input.recipientId);
         return false;
       }
       const check = await this.drizzleProvider.db.select({
@@ -101,7 +101,7 @@ export class LikeService {
         ));
 
         // delete notification 
-        await this.notificationService.sentRemoveLikeOnPostNotification(sessionUser.id, input.id, input.recipientId);
+        await this.notificationService.sendRemoveLikeOnPostNotification(sessionUser.id, input.id, input.recipientId);
         return false;
       }
 
@@ -111,7 +111,7 @@ export class LikeService {
       });
 
       // 
-      await this.notificationService.sentLikeOnPostNotification(sessionUser, input.id, input.recipientId,input.postUrl);
+      await this.notificationService.sendLikeOnPostNotification(sessionUser, input.id, input.recipientId,input.postUrl);
       return true;
 
     } catch (error) {

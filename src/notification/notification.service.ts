@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { CreateNotificationInput } from './dto/create-notification.input';
 import { DrizzleProvider } from 'src/db/drizzle/drizzle.provider';
 import { Author } from 'src/users/entities/author.entity';
 import { Notification } from './entities/notification.entity';
@@ -11,6 +10,7 @@ import { event_name } from 'src/configs/connection.name';
 import Expo from 'expo-server-sdk';
 import expo from 'src/lib/expo';
 import { RedisProvider } from 'src/db/redis/redis.provider';
+import { Comment } from '../comment/entities/comment.entity';
 
 @Injectable()
 export class NotificationService {
@@ -20,41 +20,52 @@ export class NotificationService {
     private readonly redisProvider: RedisProvider
   ) { }
 
-  async sentLikeOnPostNotification(user: Author, postId: string, recipientId: string, postUrl: string): Promise<Notification> {
-    const data = await this.drizzleProvider.db.insert(NotificationSchema)
-      .values({
-        authorId: user.id,
-        recipientId: recipientId,
-        postId: postId,
-        type: "like",
-      }).returning();
-
-    const notificationData = {
-      ...data[0],
-      postUrl: {
-        id: postId,
-        url: ""
-      },
-      author: user,
-    };
-
-    const ids = await this.eventProvider.findUserBySocketId([recipientId]);
-    if (ids && ids.length > 0) {
-      this.eventProvider.publishMessage(event_name.notification.post, { ...notificationData, members: [recipientId] });
-    } else {
-      const userNotificationId = await this.redisProvider.client.get(`notification:${recipientId}`)
-      if (userNotificationId) {
-        // console.log(userNotificationId)
-        this.ExpNotificationsSender(userNotificationId, {
-          title: `${user.name}`,
-          body: `${user.name} liked your post`,
-          channelId: postId,
-          data: { postId }
-        })
-      }
+  async ExpNotificationsSender(token: string, data: {
+    title: string,
+    body: string,
+    channelId?: string,
+    data?: {
+      url: string,
+    },
+    richContent?: {
+      image: string,
+    },
+  }): Promise<void> {
+    // const { pushToken, title, body, imageUrl } = request.body as any;
+    // Validate push token
+    if (!Expo.isExpoPushToken(token)) {
+      return;// response.send(`Invalid Expo push token`);
     }
 
-    return data[0] as Notification;
+    const message = {
+      to: token,
+      sound: 'default',
+      title: data.title,
+      body: data.body,
+      channelId: data.channelId,
+      data: data.data,
+      richContent: data.richContent,
+    };
+
+    try {
+      const chunks = expo.chunkPushNotifications([message]);
+
+      const tickets: any = [];
+
+      for (let chunk of chunks) {
+        try {
+          const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+          tickets.push(...ticketChunk);
+        } catch (error) {
+          console.error('Chunk error:', error);
+          return; // response.send(`Failed to send notification`);
+        }
+      }
+      return; // response.send(`Expo push token success`);
+    } catch (err) {
+      console.error('Notification error:', err);
+      return;// response.send(`Failed to send notification`);
+    }
   }
 
   async findAll(user: Author, findAllNotificationInput: GraphQLPageQuery): Promise<Notification[] | any[]> {
@@ -97,19 +108,6 @@ export class NotificationService {
     }
 
     return data
-  }
-
-  async sentRemoveLikeOnPostNotification(userId: string, postId: string, recipientId: string): Promise<any> {
-    await this.drizzleProvider.db.delete(NotificationSchema)
-      .where(
-        and(
-          eq(NotificationSchema.authorId, userId),
-          eq(NotificationSchema.postId, postId),
-          eq(NotificationSchema.type, "like"),
-          eq(NotificationSchema.recipientId, recipientId)
-        )
-      )
-    return true
   }
 
   async markAsSeen(user: Author): Promise<boolean> {
@@ -184,49 +182,94 @@ export class NotificationService {
     return data.filter((item) => Number(item.totalUnreadCount) !== 0).length || 0
   }
 
-  async ExpNotificationsSender(token: string, data: {
-    title: string,
-    body: string,
-    channelId?: string,
-    data?: any,
-    richContent?: {
-      image: string,
-    },
-  }): Promise<void> {
-    // const { pushToken, title, body, imageUrl } = request.body as any;
-    // Validate push token
-    if (!Expo.isExpoPushToken(token)) {
-      return;// response.send(`Invalid Expo push token`);
-    }
+  // like notification
+  async sendLikeOnPostNotification(user: Author, postId: string, recipientId: string, postUrl: string): Promise<Notification> {
+    const data = await this.drizzleProvider.db.insert(NotificationSchema)
+      .values({
+        authorId: user.id,
+        recipientId: recipientId,
+        postId: postId,
+        type: "like",
+      }).returning();
 
-    const message = {
-      to: token,
-      sound: 'default',
-      title: data.title,
-      body: data.body,
-      channelId: data.channelId,
-      data: data.data,
-      richContent: data.richContent,
+    const notificationData = {
+      ...data[0],
+      postUrl: {
+        id: postId,
+        url: ""
+      },
+      author: user,
     };
 
-    try {
-      const chunks = expo.chunkPushNotifications([message]);
-
-      const tickets: any = [];
-
-      for (let chunk of chunks) {
-        try {
-          const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
-          tickets.push(...ticketChunk);
-        } catch (error) {
-          console.error('Chunk error:', error);
-          return; // response.send(`Failed to send notification`);
-        }
+    const ids = await this.eventProvider.findUserBySocketId([recipientId]);
+    if (ids && ids.length > 0) {
+      this.eventProvider.publishMessage(event_name.notification.post, { ...notificationData, members: [recipientId] });
+    } else {
+      const userNotificationId = await this.redisProvider.client.get(`notification:${recipientId}`)
+      if (userNotificationId) {
+        // console.log(userNotificationId)
+        this.ExpNotificationsSender(userNotificationId, {
+          title: `${user.name}`,
+          body: `${user.name} liked your post`,
+          channelId: postId,
+          data: { url: `snaapio://post/${postId}` }
+        })
       }
-      return; // response.send(`Expo push token success`);
-    } catch (err) {
-      console.error('Notification error:', err);
-      return;// response.send(`Failed to send notification`);
     }
+
+    return data[0] as Notification;
   }
+
+  async sendRemoveLikeOnPostNotification(userId: string, postId: string, recipientId: string): Promise<any> {
+    await this.drizzleProvider.db.delete(NotificationSchema)
+      .where(
+        and(
+          eq(NotificationSchema.authorId, userId),
+          eq(NotificationSchema.postId, postId),
+          eq(NotificationSchema.type, "like"),
+          eq(NotificationSchema.recipientId, recipientId)
+        )
+      )
+    return true
+  }
+
+  // like notification
+  async sendCommentOnPostNotification(user: Author, comment: Comment, recipientId: string): Promise<Notification> {
+    const data = await this.drizzleProvider.db.insert(NotificationSchema)
+      .values({
+        authorId: user.id,
+        recipientId: recipientId,
+        postId: comment.postId,
+        commentId:comment.id,
+        type: 'comment',
+      }).returning();
+
+    const notificationData = {
+      ...data[0],
+      postUrl: {
+        id: comment.postId,
+        url: ""
+      },
+      author: user,
+    };
+
+    const ids = await this.eventProvider.findUserBySocketId([recipientId]);
+    if (ids && ids.length > 0) {
+      this.eventProvider.publishMessage(event_name.notification.post, { ...notificationData, members: [recipientId] });
+    } else {
+      const userNotificationId = await this.redisProvider.client.get(`notification:${recipientId}`)
+      if (userNotificationId) {
+        // console.log(userNotificationId)
+        this.ExpNotificationsSender(userNotificationId, {
+          title: `${user.name} commented on your post`,
+          body: comment.content|| '...',
+          channelId: comment.postId,
+          data: { url: `snaapio://post/${comment.postId}/comments` }
+        })
+      }
+    }
+
+    return data[0] as Notification;
+  }
+  async sendRemoveCommentOnPostNotification(user: Author, postId: string, recipientId: string, postUrl: string): Promise<void> {}
 }
