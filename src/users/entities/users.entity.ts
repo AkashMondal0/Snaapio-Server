@@ -21,6 +21,12 @@ export class Users {
 
   @Field(() => [String])
   website: string[];
+
+  @Field(() => String, { nullable: true })
+  privateKey: string
+  
+  @Field(() => String, { nullable: true })
+  publicKey: string
 }
 
 @ObjectType()

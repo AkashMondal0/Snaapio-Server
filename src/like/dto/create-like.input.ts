@@ -6,4 +6,8 @@ export class CreateLikeInput {
   id: string;
   @Field(() => Boolean)
   like: boolean;
+  @Field(() => String)
+  recipientId: string;
+  @Field(() => String)
+  postUrl: string;
 }

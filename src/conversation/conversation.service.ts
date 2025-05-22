@@ -8,6 +8,7 @@ import { ConversationSchema, MessagesSchema, UserSchema } from 'src/db/drizzle/d
 import { Conversation } from './entities/conversation.entity';
 import { Author } from 'src/users/entities/author.entity';
 import { GraphQLPageQuery } from 'src/lib/types/graphql.global.entity';
+import { decryptForUser } from 'src/lib/crypto/encrypt.decrypt';
 @Injectable()
 export class ConversationService {
   constructor(
@@ -17,13 +18,21 @@ export class ConversationService {
 
   async create(user: Author, createConversationInput: CreateConversationInput): Promise<Conversation | GraphQLError> {
 
-    const { memberIds, isGroup = false, groupDescription = "Group", groupName = "Group", groupImage = "/user.jpg" } = createConversationInput
+    const {
+      memberIds,
+      isGroup = false,
+      groupDescription = "Group",
+      groupName = "Group",
+      groupImage = "/user.jpg",
+      members_e_key
+    } = createConversationInput
 
     // create group
     if (isGroup && memberIds.length >= 2) {
       const data = await this.drizzleProvider.db.insert(ConversationSchema).values({
         authorId: user.id,
         members: [user.id, ...memberIds],
+        members_e_key: members_e_key,
         isGroup,
         groupDescription,
         groupImage,
@@ -56,6 +65,7 @@ export class ConversationService {
     const data = await this.drizzleProvider.db.insert(ConversationSchema).values({
       authorId: user.id,
       members: [user.id, ...memberIds],
+      members_e_key: members_e_key,
       userId: memberIds[0],
       isGroup,
     })
@@ -65,11 +75,16 @@ export class ConversationService {
   }
 
   async findAll(user: Author, graphQLPageQuery: GraphQLPageQuery): Promise<Conversation[] | GraphQLError> {
-
+    if (!graphQLPageQuery?.privateKey) {
+      throw new GraphQLError("privateKey not found", {
+        extensions: { code: 'KEY_NOT_FOUND' }
+      })
+    };
     const data = await this.drizzleProvider.db.select({
       id: ConversationSchema.id,
       authorId: ConversationSchema.authorId,
       members: ConversationSchema.members,
+      membersPublicKey: ConversationSchema.members_e_key,
       isGroup: ConversationSchema.isGroup,
       groupDescription: ConversationSchema.groupDescription,
       groupImage: ConversationSchema.groupImage,
@@ -83,9 +98,11 @@ export class ConversationService {
         email: UserSchema.email,
         profilePicture: UserSchema.profilePicture,
         name: UserSchema.name,
+        // publicKey:UserSchema.publicKey
       },
       // find last message
       lastMessageContent: MessagesSchema.content,
+      lastMessage: MessagesSchema,
       lastMessageCreatedAt: MessagesSchema.createdAt,
       totalUnreadMessagesCount: sql`(SELECT COUNT(*) 
         FROM ${MessagesSchema}
@@ -112,7 +129,19 @@ export class ConversationService {
       .limit(graphQLPageQuery.limit ?? 12)
       .offset(graphQLPageQuery.offset ?? 0);
 
-    return data as Conversation[]
+    const newData = data.map((con) => {
+      return {
+        ...con,
+        lastMessageContent: con.lastMessage ? decryptForUser(
+          con.lastMessage.content,
+          con.lastMessage.e_key[user.id], // encryptedKey
+          con.lastMessage.iv,
+          graphQLPageQuery.privateKey,
+        ).toString() : "..."
+      }
+    })
+
+    return newData as Conversation[]
   }
 
   async findOne(user: Author, graphQLPageQuery: GraphQLPageQuery): Promise<Conversation | GraphQLError> {
@@ -121,6 +150,7 @@ export class ConversationService {
       id: ConversationSchema.id,
       authorId: ConversationSchema.authorId,
       members: ConversationSchema.members,
+      membersPublicKey: ConversationSchema.members_e_key,
       isGroup: ConversationSchema.isGroup,
       groupDescription: ConversationSchema.groupDescription,
       groupImage: ConversationSchema.groupImage,
@@ -134,6 +164,7 @@ export class ConversationService {
         email: UserSchema.email,
         profilePicture: UserSchema.profilePicture,
         name: UserSchema.name,
+        // publicKey: UserSchema.publicKey
       }
     })
       .from(ConversationSchema)
@@ -154,6 +185,6 @@ export class ConversationService {
       throw new GraphQLError("Conversation not found")
     }
 
-    return data[0]
+    return data[0];
   }
 }

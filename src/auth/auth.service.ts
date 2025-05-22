@@ -7,12 +7,15 @@ import { AccountSchema, UserPasswordSchema, UserSchema, UserSettingsSchema } fro
 import { eq, or } from 'drizzle-orm';
 import { DrizzleProvider } from 'src/db/drizzle/drizzle.provider';
 import { Users } from 'src/users/entities/users.entity';
+import { generateRSAKeyPair } from 'src/lib/crypto/encrypt.decrypt';
 
 export interface SignUpAndSignInResponse {
   id: string,
   username: string,
   email: string,
-  accessToken: string
+  accessToken: string,
+  publicKey: string,
+  privateKey: string
 }
 
 @Injectable()
@@ -45,10 +48,10 @@ export class AuthService {
       bio: user.bio ?? "",
       website: user.website ?? [],
       profilePicture: user.profilePicture,
-      lastStatusUpdate: user.lastStatusUpdate ?? "",
     }
 
-    const accessToken = await this.jwtService.signAsync(userinfo, { expiresIn: '30d' })
+    const accessToken = await this.jwtService.signAsync(userinfo, { expiresIn: '30d' });
+    // save session to redis
 
     response.setCookie('sky.inc-token', accessToken, {
       path: "/",
@@ -57,10 +60,12 @@ export class AuthService {
       priority: "medium",
       sameSite: "lax",
       secure: true
-    })
+    });
     return {
       ...userinfo,
       accessToken: accessToken,
+      privateKey: user.privateKey,
+      publicKey: user.publicKey,
     };
   }
 
@@ -88,9 +93,9 @@ export class AuthService {
       bio: "",
       website: [],
       profilePicture: newUser.profilePicture,
-      lastStatusUpdate: "",
     }
-    const accessToken = await this.jwtService.signAsync(userinfo, { expiresIn: '30d' })
+    const accessToken = await this.jwtService.signAsync(userinfo, { expiresIn: '30d' });
+    // save session to redis
 
     response.setCookie('sky.inc-token', accessToken, {
       path: '/',
@@ -101,7 +106,12 @@ export class AuthService {
       secure: true
     })
 
-    return { ...userinfo, accessToken: accessToken }
+    return {
+      ...userinfo,
+      accessToken: accessToken,
+      privateKey: newUser.privateKey,
+      publicKey: newUser.publicKey,
+    }
   }
 
   async signOut(request: FastifyRequest, response: FastifyReply): Promise<string | HttpException> {
@@ -121,7 +131,8 @@ export class AuthService {
     bio: string,
     website: string[],
     profilePicture: string
-    lastStatusUpdate: string
+    privateKey: string,
+    publicKey: string
   } | null> {
     try {
       const user = await this.drizzleProvider.db.select({
@@ -134,7 +145,8 @@ export class AuthService {
         profilePicture: UserSchema.profilePicture,
         bio: UserSchema.bio,
         website: UserSchema.website,
-        lastStatusUpdate: UserSchema.lastStatusUpdate
+        privateKey: UserSchema.privateKey,
+        publicKey: UserSchema.publicKey
       })
         .from(UserSchema)
         .leftJoin(UserPasswordSchema, eq(UserSchema.id, UserPasswordSchema.id))
@@ -181,13 +193,15 @@ export class AuthService {
   }
 
   async createUser(userCredential: RegisterUserPayload): Promise<Users | null> {
-    const hashPassword = await createHash(userCredential.password)
-
+    const hashPassword = await createHash(userCredential.password);
+    const { publicKey, privateKey } = generateRSAKeyPair();
     try {
       const newUser = await this.drizzleProvider.db.insert(UserSchema).values({
         username: userCredential.username,
         name: userCredential.name,
         email: userCredential.email,
+        privateKey: privateKey,
+        publicKey: publicKey
       }).returning({
         id: UserSchema.id,
         username: UserSchema.username,
@@ -197,28 +211,29 @@ export class AuthService {
         bio: UserSchema.bio,
         lastStatusUpdate: UserSchema.lastStatusUpdate,
         website: UserSchema.website,
+        privateKey: UserSchema.privateKey,
+        publicKey: UserSchema.publicKey
       })
 
       await this.drizzleProvider.db.insert(AccountSchema).values({
         id: newUser[0].id,
-      }).returning()
+      });
 
       await this.drizzleProvider.db.insert(UserPasswordSchema).values({
         id: newUser[0].id,
         password: hashPassword,
         hash: hashPassword
-      }).returning()
+      });
 
       await this.drizzleProvider.db.insert(UserSettingsSchema).values({
         id: newUser[0].id,
-      }).returning()
-
+      });
 
       if (!newUser[0].id) {
         return null;
-      }
+      };
 
-      return newUser[0] as any
+      return newUser[0] as any;
     } catch (error) {
       Logger.error(`createUser Error:`, error)
       return null

@@ -1,44 +1,143 @@
-import { createCipheriv, createDecipheriv, randomBytes, scrypt } from 'crypto';
-import { promisify } from 'util';
-const scryptAsync = promisify(scrypt);
+import {
+  generateKeyPairSync,
+  publicEncrypt,
+  privateDecrypt,
+  createCipheriv,
+  createDecipheriv,
+  randomBytes,
+  constants,
+} from 'crypto';
 
-const encrypt = async (text: string, token: string) => {
-  const iv = randomBytes(16); // Initialization vector
-  const salt = randomBytes(16); // Salt for key derivation
+// 1. Generate RSA key pair for a user
+export function generateRSAKeyPair() {
+  const { publicKey, privateKey } = generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+    publicKeyEncoding: { type: 'pkcs1', format: 'pem' },
+    privateKeyEncoding: { type: 'pkcs1', format: 'pem' },
+  });
+  return { publicKey, privateKey };
+}
 
-  // Derive a key from the password and salt
-  const key = (await scryptAsync(token, salt, 32)) as Buffer;
+// 2. Encrypt data using AES + RSA
+export function encryptData(plaintext: string | Buffer, receiverPublicKey: string) {
+  const aesKey = randomBytes(32); // AES-256
+  const iv = randomBytes(16);
 
-  const cipher = createCipheriv('aes-256-ctr', key, iv);
+  const cipher = createCipheriv('aes-256-cbc', aesKey, iv);
+  const encryptedData = Buffer.concat([cipher.update(plaintext), cipher.final()]);
 
-  const encryptedText = Buffer.concat([
-    cipher.update(text, 'utf8'),
-    cipher.final(),
-  ]);
+  const encryptedKey = publicEncrypt(receiverPublicKey, aesKey);
 
-  // Combine salt, iv, and encrypted text into a single buffer for storage
-  return Buffer.concat([salt, iv, encryptedText]).toString('hex');
-};
+  return {
+    encryptedData: encryptedData.toString('base64'),
+    encryptedKey: encryptedKey.toString('base64'),
+    iv: iv.toString('base64'),
+  };
+}
 
-const decrypt = async (encryptedText:string, token:string) => {
-  const encryptedBuffer = Buffer.from(encryptedText, 'hex');
+// 3. Decrypt using AES + RSA
+export function decryptData(
+  encryptedDataB64: string,
+  encryptedKeyB64: string,
+  ivB64: string,
+  recipientPrivateKey: string,
+): string {
+  const encryptedData = Buffer.from(encryptedDataB64, 'base64');
+  const encryptedKey = Buffer.from(encryptedKeyB64, 'base64');
+  const iv = Buffer.from(ivB64, 'base64');
 
-  // Extract salt, iv, and the actual encrypted text
-  const salt = encryptedBuffer.slice(0, 16);
-  const iv = encryptedBuffer.slice(16, 32);
-  const text = encryptedBuffer.slice(32);
+  const aesKey = privateDecrypt(recipientPrivateKey, encryptedKey);
 
-  // Derive the key using the salt and token
-  const key = (await scryptAsync(token, salt, 32)) as Buffer;
+  const decipher = createDecipheriv('aes-256-cbc', aesKey, iv);
+  const decrypted = Buffer.concat([decipher.update(encryptedData), decipher.final()]);
 
-  const decipher = createDecipheriv('aes-256-ctr', key, iv);
+  return decrypted.toString();
+}
 
-  const decryptedText = Buffer.concat([
-    decipher.update(text),
-    decipher.final(),
-  ]);
+export function encryptImage(imageBuffer: Buffer, receiverPublicKey: string) {
+  const aesKey = randomBytes(32);
+  const iv = randomBytes(16);
 
-  return decryptedText.toString('utf8');
-};
+  const cipher = createCipheriv('aes-256-cbc', aesKey, iv);
+  const encryptedImage = Buffer.concat([cipher.update(imageBuffer), cipher.final()]);
+  const encryptedKey = publicEncrypt(receiverPublicKey, aesKey);
 
-export { encrypt, decrypt };
+  return {
+    encryptedImage: encryptedImage.toString('base64'),
+    encryptedKey: encryptedKey.toString('base64'),
+    iv: iv.toString('base64'),
+  };
+}
+
+export function decryptImage(
+  encryptedImageB64: string,
+  encryptedKeyB64: string,
+  ivB64: string,
+  receiverPrivateKey: string,
+): Buffer {
+  const encryptedImage = Buffer.from(encryptedImageB64, 'base64');
+  const encryptedKey = Buffer.from(encryptedKeyB64, 'base64');
+  const iv = Buffer.from(ivB64, 'base64');
+
+  const aesKey = privateDecrypt(receiverPrivateKey, encryptedKey);
+  const decipher = createDecipheriv('aes-256-cbc', aesKey, iv);
+
+  const decryptedImage = Buffer.concat([decipher.update(encryptedImage), decipher.final()]);
+  return decryptedImage;
+}
+
+// --- 🔐 UTILITIES ---
+
+export function encryptForParticipants(
+  dataBuffer: Buffer, // text or image or file
+  participantPublicKeys: Record<string, string>, // { userId: publicKeyPem }
+) {
+  const aesKey = randomBytes(32);
+  const iv = randomBytes(16);
+
+  const cipher = createCipheriv('aes-256-cbc', aesKey, iv);
+  const encryptedData = Buffer.concat([cipher.update(dataBuffer), cipher.final()]);
+
+  const encryptedKeys = Object.entries(participantPublicKeys).reduce<Record<string, string>>(
+    (acc, [userId, publicKey]) => {
+      const encryptedKey = publicEncrypt(
+        {
+          key: publicKey,
+          padding: constants.RSA_PKCS1_OAEP_PADDING,
+        },
+        aesKey,
+      );
+      acc[userId] = encryptedKey.toString('base64');
+      return acc;
+    },
+    {},
+  );
+
+  return {
+    encryptedData: encryptedData.toString('base64'),
+    iv: iv.toString('base64'),
+    encryptedKeys,
+  };
+}
+
+export function decryptForUser(
+  encryptedDataB64: string,
+  encryptedKeyB64: string,
+  ivB64: string,
+  privateKeyPem: string,
+): Buffer {
+  const encryptedData = Buffer.from(encryptedDataB64, 'base64');
+  const encryptedKey = Buffer.from(encryptedKeyB64, 'base64');
+  const iv = Buffer.from(ivB64, 'base64');
+
+  const aesKey = privateDecrypt(
+    {
+      key: privateKeyPem,
+      padding: constants.RSA_PKCS1_OAEP_PADDING,
+    },
+    encryptedKey,
+  );
+
+  const decipher = createDecipheriv('aes-256-cbc', aesKey, iv);
+  return Buffer.concat([decipher.update(encryptedData), decipher.final()]);
+}

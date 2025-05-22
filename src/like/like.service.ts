@@ -6,10 +6,12 @@ import { and, eq, exists } from 'drizzle-orm';
 import { GraphQLPageQuery } from 'src/lib/types/graphql.global.entity';
 import { Author } from 'src/users/entities/author.entity';
 import { CreateLikeInput } from './dto/create-like.input';
+import { NotificationService } from 'src/notification/notification.service';
 
 @Injectable()
 export class LikeService {
-  constructor(private readonly drizzleProvider: DrizzleProvider) { }
+  constructor(private readonly drizzleProvider: DrizzleProvider,
+    private readonly notificationService: NotificationService) { }
 
   // like find all
   async findAll(sessionUser: Author, searchById: GraphQLPageQuery): Promise<Author[] | GraphQLError> {
@@ -79,40 +81,44 @@ export class LikeService {
         await this.drizzleProvider.db.delete(LikeSchema).where(and(
           eq(LikeSchema.authorId, sessionUser.id),
           eq(LikeSchema.postId, input.id)
-        ))
-        return false
+        ));
+
+        // delete notification 
+        await this.notificationService.sendRemoveLikeOnPostNotification(sessionUser.id, input.id, input.recipientId);
+        return false;
       }
       const check = await this.drizzleProvider.db.select({
         id: LikeSchema.id
       }).from(LikeSchema).where(and(
         eq(LikeSchema.authorId, sessionUser.id),
         eq(LikeSchema.postId, input.id)
-      )).limit(1)
+      )).limit(1);
 
       if (check.length > 0) {
         await this.drizzleProvider.db.delete(LikeSchema).where(and(
           eq(LikeSchema.authorId, sessionUser.id),
           eq(LikeSchema.postId, input.id)
-        ))
-        return false
+        ));
+
+        // delete notification 
+        await this.notificationService.sendRemoveLikeOnPostNotification(sessionUser.id, input.id, input.recipientId);
+        return false;
       }
 
       await this.drizzleProvider.db.insert(LikeSchema).values({
         authorId: sessionUser.id,
         postId: input.id
-      })
-      return true
+      });
+
+      // 
+      await this.notificationService.sendLikeOnPostNotification(sessionUser, input.id, input.recipientId,input.postUrl);
+      return true;
 
     } catch (error) {
-      Logger.error(error)
-      if (error instanceof GraphQLError) {
-        throw error;
-      } else {
-        throw new GraphQLError('Internal Server Error', {
-          extensions: { code: 'INTERNAL_SERVER_ERROR' }
-        });
-      }
-      false
+      Logger.error(error);
+      throw new GraphQLError('Internal Server Error', {
+        extensions: { code: 'INTERNAL_SERVER_ERROR' }
+      });
     }
   }
 

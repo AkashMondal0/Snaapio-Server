@@ -8,19 +8,34 @@ import { Author } from 'src/users/entities/author.entity';
 import { GraphQLPageQuery, TypingStatusInput } from 'src/lib/types/graphql.global.entity';
 import { EventGateway } from 'src/event/event.gateway';
 import { event_name } from 'src/configs/connection.name';
+import { decryptForUser, encryptForParticipants } from 'src/lib/crypto/encrypt.decrypt';
+import { RedisProvider } from 'src/db/redis/redis.provider';
+import { GraphQLError } from 'graphql';
+import { NotificationService } from 'src/notification/notification.service';
 
 @Injectable()
 export class MessageService {
   constructor(
     private readonly drizzleProvider: DrizzleProvider,
-    private readonly eventProvider: EventGateway
+    private readonly eventProvider: EventGateway,
+    private readonly notificationService: NotificationService,
+    private readonly redisProvider: RedisProvider
+
   ) { }
-  async findAll(user: Author, graphQLPageQuery: GraphQLPageQuery): Promise<Message[]> {
+  async findAll(user: Author, graphQLPageQuery: GraphQLPageQuery): Promise<Message[] | GraphQLError> {
+    if (!graphQLPageQuery?.privateKey) {
+      throw new GraphQLError("privateKey not found", {
+        extensions: { code: 'KEY_NOT_FOUND' }
+      })
+    };
+
     const data = await this.drizzleProvider.db.select({
       id: MessagesSchema.id,
       conversationId: MessagesSchema.conversationId,
       authorId: MessagesSchema.authorId,
       content: MessagesSchema.content,
+      e_key: MessagesSchema.e_key,
+      iv: MessagesSchema.iv,
       fileUrl: MessagesSchema.fileUrl,
       deleted: MessagesSchema.deleted,
       seenBy: MessagesSchema.seenBy,
@@ -43,23 +58,62 @@ export class MessageService {
       .leftJoin(UserSchema, eq(MessagesSchema.authorId, UserSchema.id))
       .orderBy(desc(MessagesSchema.createdAt))
       .limit(graphQLPageQuery.limit ?? 16)
-      .offset(graphQLPageQuery.offset ?? 0)
+      .offset(graphQLPageQuery.offset ?? 0);
 
-    return data?.reverse()
+    const nData = data.map((m, i) => {
+      return {
+        ...m,
+        content: decryptForUser(
+          m.content,
+          m.e_key[user.id], // encryptedKey
+          m.iv,
+          graphQLPageQuery.privateKey,
+        ).toString()
+      }
+    });
+
+    return nData.reverse();
   }
 
   async create(user: Author, createMessageInput: CreateMessageInput): Promise<Message> {
+
+    const encryptedMessage = encryptForParticipants(
+      Buffer.from(createMessageInput.content, 'utf-8'),
+      createMessageInput.membersPublicKey,
+    );
+
     const data = await this.drizzleProvider.db.insert(MessagesSchema)
       .values({
-        content: createMessageInput.content,
+        content: encryptedMessage.encryptedData,
+        e_key: encryptedMessage.encryptedKeys,
+        iv: encryptedMessage.iv,
         conversationId: createMessageInput.conversationId,
         authorId: createMessageInput.authorId,
         fileUrl: createMessageInput.fileUrl ?? [],
         seenBy: [user.id]
       })
-      .returning()
-    this.eventProvider.publishMessage(event_name.conversation.message, { ...data[0], members: createMessageInput.members })
-    return data[0]
+      .returning();
+
+    const rawData: Message = { ...data[0], content: createMessageInput.content };
+
+    const recipientId = createMessageInput.members.filter((i) => i !== user.id);
+    const ids = await this.eventProvider.findUserBySocketId([recipientId[0]]);
+
+    if (ids && ids.length > 0) {
+      this.eventProvider.publishMessage(event_name.conversation.message, { ...rawData, members: createMessageInput.members })
+    } else {
+      const userNotificationId = await this.redisProvider.client.get(`notification:${recipientId}`)
+      if (userNotificationId) {
+        // console.log(userNotificationId)
+        this.notificationService.ExpNotificationsSender(userNotificationId, {
+          title: `${user.name}`,
+          body: rawData.content,
+          channelId: rawData.conversationId,
+          data: { url: `snaapio://message/${rawData.conversationId}` }
+        })
+      }
+    }
+    return rawData;
   }
 
   async seenMessages(user: Author, conversationId: CreateMessageInputSeen): Promise<boolean> {

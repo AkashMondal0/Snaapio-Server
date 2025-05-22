@@ -1,21 +1,26 @@
 import { ObjectType, Field } from '@nestjs/graphql';
+import { GraphQLJSONObject } from 'graphql-type-json';
 import { Message } from 'src/message/entities/message.entity';
 import { Author } from 'src/users/entities/author.entity';
+
 @ObjectType()
 export class Conversation {
   @Field(() => String)
   id: string;
 
-  @Field(() => [String])
+  @Field(() => [String], { nullable: true })
   members?: string[];
 
-  @Field(() => String)
+  @Field(() => GraphQLJSONObject, { nullable: true })
+  membersPublicKey?: Record<string, string>;
+
+  @Field(() => String, { nullable: true })
   authorId: string;
 
-  @Field(() => [Message],{ nullable: true })
+  @Field(() => [Message], { nullable: true })
   messages?: Message[] | any[]
 
-  @Field(() => Author,{ nullable: true })
+  @Field(() => Author, { nullable: true })
   user?: Author | null
 
   @Field(() => Boolean, { nullable: true })
@@ -23,7 +28,10 @@ export class Conversation {
 
   @Field(() => String, { nullable: true })
   lastMessageContent: string | null;
-  
+
+  @Field(() => Message, { nullable: true })
+  lastMessage?: Message
+
   @Field(() => Number, { nullable: true })
   totalUnreadMessagesCount?: number | null;
 

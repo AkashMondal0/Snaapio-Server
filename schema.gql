@@ -70,6 +70,8 @@ type Author {
   website: [String!]
   lastStatusUpdate: String
   fileUrl: [AssetUrls!]
+  privateKey: String
+  publicKey: String
 }
 
 type Friendship {
@@ -103,6 +105,8 @@ type Profile {
   website: [String!]
   lastStatusUpdate: String
   fileUrl: [AssetUrls!]
+  privateKey: String
+  publicKey: String
   postCount: Float
   followerCount: Float
   followingCount: Float
@@ -110,37 +114,6 @@ type Profile {
   top_followers: [Author!]
   isPrivate: Boolean
   isVerified: Boolean
-}
-
-type Message {
-  id: String!
-  conversationId: String!
-  authorId: String
-  content: String!
-  user: Author
-  fileUrl: [AssetUrls!]
-  deleted: Boolean
-  seenBy: [String!]
-  createdAt: DateTime
-  updatedAt: DateTime
-  members: [String!]
-}
-
-type Conversation {
-  id: String!
-  members: [String!]!
-  authorId: String!
-  messages: [Message!]
-  user: Author
-  isGroup: Boolean
-  lastMessageContent: String
-  totalUnreadMessagesCount: Float
-  lastMessageCreatedAt: DateTime
-  createdAt: DateTime
-  updatedAt: DateTime
-  groupName: String
-  groupImage: String
-  groupDescription: String
 }
 
 type Notification {
@@ -165,6 +138,46 @@ type UnReadNotification {
   unreadCommentCount: Float
   unreadPostCount: Float
   unreadChatCount: Float
+}
+
+type Message {
+  id: String!
+  conversationId: String!
+  authorId: String
+  content: String
+  members_e_key: JSONObject
+  iv: String
+  user: Author
+  fileUrl: [AssetUrls!]
+  deleted: Boolean
+  seenBy: [String!]
+  createdAt: DateTime
+  updatedAt: DateTime
+  members: [String!]
+}
+
+"""
+The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSONObject
+
+type Conversation {
+  id: String!
+  members: [String!]
+  membersPublicKey: JSONObject
+  authorId: String
+  messages: [Message!]
+  user: Author
+  isGroup: Boolean
+  lastMessageContent: String
+  lastMessage: Message
+  totalUnreadMessagesCount: Float
+  lastMessageCreatedAt: DateTime
+  createdAt: DateTime
+  updatedAt: DateTime
+  groupName: String
+  groupImage: String
+  groupDescription: String
 }
 
 type Story {
@@ -234,6 +247,9 @@ type Query {
   findAllPosts(graphQLPageQuery: GraphQLPageQuery!): [Post!]!
   findOnePost(graphQLPageQuery: GraphQLPageQuery!): Post!
   findAllComments(graphQLPageQuery: GraphQLPageQuery!): [Comment!]!
+  findAllNotifications(graphQLPageQuery: GraphQLPageQuery!): [Notification!]!
+  unseenNotifications: UnReadNotification!
+  unseenMessageNotifications: Float!
   findAllLikes(graphQLPageQuery: GraphQLPageQuery!): [Author!]!
   findAllConversation(graphQLPageQuery: GraphQLPageQuery!): [Conversation!]!
   findOneConversation(graphQLPageQuery: GraphQLPageQuery!): Conversation!
@@ -241,9 +257,6 @@ type Query {
   typingStatus(typingStatusInput: TypingStatusInput!): String!
   findAllFollower(graphQLPageQuery: GraphQLPageQuery!): [Author!]!
   findAllFollowing(graphQLPageQuery: GraphQLPageQuery!): [Author!]!
-  findAllNotifications(graphQLPageQuery: GraphQLPageQuery!): [Notification!]!
-  unseenNotifications: UnReadNotification!
-  unseenMessageNotifications: Float!
   findStory(graphQLPageQuery: GraphQLPageQuery!): [Story!]!
   findAllStory(graphQLPageQuery: GraphQLPageQuery!): [Story!]!
   findAllHighlight(graphQLPageQuery: GraphQLPageQuery!): [Highlight!]!
@@ -254,6 +267,7 @@ type Query {
 
 input GraphQLPageQuery {
   id: String
+  privateKey: String
   offset: Float
   limit: Float
 }
@@ -272,15 +286,13 @@ type Mutation {
   createComment(input: CreateCommentInput!): Comment!
   updateComment(input: UpdateCommentInput!): Comment!
   destroyComment(id: String!): Comment!
+  markAsSeenNotification: Boolean!
   Like(input: CreateLikeInput!): Boolean!
   createConversation(createConversationInput: CreateConversationInput!): Conversation!
   createMessage(createMessageInput: CreateMessageInput!): Message!
   seenMessages(createMessageInputSeen: CreateMessageInputSeen!): Message!
   createFriendship(createFriendshipInput: CreateFriendshipInput!): Friendship!
   destroyFriendship(destroyFriendship: DestroyFriendship!): Friendship!
-  createNotification(createNotificationInput: CreateNotificationInput!): Notification!
-  destroyNotification(destroyNotificationInput: CreateNotificationInput!): Notification!
-  markAsSeenNotification: Boolean!
   createStory(createStoryInput: CreateStoryInput!): Story!
   createHighlight(createHighlightInput: createHighlightInput!): Highlight!
   createCallSession(participantInput: ParticipantsInput!): CallSession!
@@ -352,6 +364,8 @@ input UpdateCommentInput {
 input CreateLikeInput {
   id: String!
   like: Boolean!
+  recipientId: String!
+  postUrl: String!
 }
 
 input CreateConversationInput {
@@ -372,6 +386,7 @@ input CreateConversationInput {
 
   """Example field (placeholder)"""
   groupImage: String
+  members_e_key: JSONObject
 }
 
 input CreateMessageInput {
@@ -389,6 +404,9 @@ input CreateMessageInput {
 
   """Example field (placeholder)"""
   members: [String!]!
+
+  """Example field (placeholder)"""
+  membersPublicKey: JSONObject!
 }
 
 input CreateMessageInputSeen {
@@ -409,28 +427,6 @@ input DestroyFriendship {
   authorUserId: String!
   followingUsername: String!
   followingUserId: String!
-}
-
-input CreateNotificationInput {
-  type: String!
-  authorId: String!
-  recipientId: String!
-  postId: String
-  commentId: String
-  storyId: String
-  reelId: String
-  author: AuthorInput!
-  post: PostInput!
-}
-
-input AuthorInput {
-  username: String!
-  profilePicture: String
-}
-
-input PostInput {
-  id: String!
-  fileUrl: String
 }
 
 input CreateStoryInput {

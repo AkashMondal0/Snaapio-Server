@@ -6,6 +6,9 @@ export class GraphQLPageQuery {
   @Field(() => String, { nullable: true })
   id: string;
 
+  @Field(() => String, { nullable: true })
+  privateKey: string;
+
   @Field(() => Number, { nullable: true })
   offset?: number;
 

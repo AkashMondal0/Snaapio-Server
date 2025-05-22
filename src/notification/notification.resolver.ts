@@ -12,11 +12,11 @@ import { GraphQLPageQuery } from 'src/lib/types/graphql.global.entity';
 export class NotificationResolver {
   constructor(private readonly notificationService: NotificationService) { }
 
-  @UseGuards(GqlAuthGuard)
-  @Mutation(() => Notification, { name: 'createNotification' })
-  createNotification(@SessionUserGraphQl() user: Author, @Args('createNotificationInput') createNotificationInput: CreateNotificationInput) {
-    return this.notificationService.create(user, createNotificationInput);
-  }
+  // @UseGuards(GqlAuthGuard)
+  // @Mutation(() => Notification, { name: 'createNotification' })
+  // createNotification(@SessionUserGraphQl() user: Author, @Args('createNotificationInput') createNotificationInput: CreateNotificationInput) {
+  //   return this.notificationService.create(user, createNotificationInput);
+  // }
 
   @UseGuards(GqlAuthGuard)
   @Query(() => [Notification], { name: 'findAllNotifications' })
@@ -36,11 +36,11 @@ export class NotificationResolver {
     return this.notificationService.UnseenMessageNotifications(user);
   }
 
-  @UseGuards(GqlAuthGuard)
-  @Mutation(() => Notification, { name: 'destroyNotification' })
-  removeNotification(@SessionUserGraphQl() user: Author, @Args('destroyNotificationInput') destroyNotificationInput: CreateNotificationInput) {
-    return this.notificationService.remove(user, destroyNotificationInput);
-  }
+  // @UseGuards(GqlAuthGuard)
+  // @Mutation(() => Notification, { name: 'destroyNotification' })
+  // removeNotification(@SessionUserGraphQl() user: Author, @Args('destroyNotificationInput') destroyNotificationInput: CreateNotificationInput) {
+  //   return this.notificationService.remove(user, destroyNotificationInput);
+  // }
 
   @UseGuards(GqlAuthGuard)
   @Mutation(() => Boolean, { name: 'markAsSeenNotification' })
