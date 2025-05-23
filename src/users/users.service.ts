@@ -173,42 +173,53 @@ export class UsersService {
     }
   }
 
-  async findNearestUsers(lat: number, lon: number, maxDistance: number): Promise<Profile[] | Error> {
-    // const lat = 00.00000;
-    // const lon = 00.0000;
-    // const maxDistance = 120; // in km
-
+  async findNearestUsers(user: Author, lat: number, lon: number, maxDistance: number): Promise<Author[] | Error> {
     try {
       const data = await this.drizzleProvider.db.execute(sql`
-    SELECT * FROM (
-      SELECT
-        ${UserSchema.id} AS id,
-        ${UserSchema.username} AS username,
-        ${UserSchema.email} AS email,
-        ${UserSchema.name} AS name,
-        ${UserSchema.profilePicture} AS profilePicture,
-        ${UserSchema.bio} AS bio,
-        ${UserSchema.website} AS website,
-        ${UserSchema.publicKey} AS publicKey,
-        (
-          6371 * acos(
-            cos(radians(${lat})) * cos(radians(${AccountSchema.latitude})) *
-            cos(radians(${AccountSchema.longitude}) - radians(${lon})) +
-            sin(radians(${lat})) * sin(radians(${AccountSchema.latitude}))
-          )
-        ) AS distance
-      FROM ${AccountSchema}
-      LEFT JOIN ${UserSchema} ON ${AccountSchema.id} = ${UserSchema.id}
-      WHERE ${AccountSchema.latitude} IS NOT NULL AND ${AccountSchema.longitude} IS NOT NULL
-    ) AS subquery
-    WHERE subquery.distance < ${maxDistance}
-    ORDER BY subquery.distance ASC
-    LIMIT 20`);
+      SELECT * FROM (
+        SELECT
+          ${UserSchema.id} AS id,
+          ${UserSchema.username} AS username,
+          ${UserSchema.email} AS email,
+          ${UserSchema.name} AS name,
+          ${UserSchema.profilePicture} AS profilePicture,
+          ${UserSchema.bio} AS bio,
+          ${UserSchema.website} AS website,
+          ${UserSchema.publicKey} AS publicKey,
+          (
+            6371 * acos(
+              cos(radians(${lat})) * cos(radians(${AccountSchema.latitude})) *
+              cos(radians(${AccountSchema.longitude}) - radians(${lon})) +
+              sin(radians(${lat})) * sin(radians(${AccountSchema.latitude}))
+            )
+          ) AS distance,
+          (
+            SELECT EXISTS(
+              SELECT 1
+              FROM ${FriendshipSchema}
+              WHERE ${FriendshipSchema.authorUsername} = ${user.username}
+                AND ${FriendshipSchema.followingUsername} = ${UserSchema.username}
+            )
+          ) AS "following"
+        FROM ${AccountSchema}
+        LEFT JOIN ${UserSchema} ON ${AccountSchema.id} = ${UserSchema.id}
+        WHERE ${AccountSchema.latitude} IS NOT NULL AND ${AccountSchema.longitude} IS NOT NULL
+      ) AS subquery
+      WHERE subquery.distance < ${maxDistance}
+        AND subquery.following = false
+        AND subquery.username != ${user.username}
+      ORDER BY subquery.distance ASC
+      LIMIT 20`);
 
-      return data as any;
+      return data.map((i) => ({
+        ...i,
+        profilePicture: i.profilepicture,
+        publicKey: i.publickey
+      })) as any[];
     } catch (error) {
       Logger.error(error);
       throw new Error(error);
     }
   }
+
 }

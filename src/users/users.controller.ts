@@ -25,28 +25,28 @@ export class UsersController {
 
   }
 
-  @Get('nearest')
-  async findNearByUsers(
-    @Query('latitude') latitude: string,
-    @Query('longitude') longitude: string,
-    @Query('distance') distance: string,
-  ): Promise<any> {
-    try {
-      const parsedLat = parseFloat(latitude);
-      const parsedLon = parseFloat(longitude);
-      const parsedDistance = parseFloat(distance);
+  // @Get('nearest')
+  // async findNearByUsers(
+  //   @Query('latitude') latitude: string,
+  //   @Query('longitude') longitude: string,
+  //   @Query('distance') distance: string,
+  // ): Promise<any> {
+  //   try {
+  //     const parsedLat = parseFloat(latitude);
+  //     const parsedLon = parseFloat(longitude);
+  //     const parsedDistance = parseFloat(distance);
 
-      if (isNaN(parsedLat) || isNaN(parsedLon) || isNaN(parsedDistance)) {
-        throw new HttpException('Invalid query parameters', HttpStatus.BAD_REQUEST);
-      }
+  //     if (isNaN(parsedLat) || isNaN(parsedLon) || isNaN(parsedDistance)) {
+  //       throw new HttpException('Invalid query parameters', HttpStatus.BAD_REQUEST);
+  //     }
 
-      const users = await this.usersService.findNearestUsers(parsedLat, parsedLon, parsedDistance);
-      return users;
-    } catch (error) {
-      console.error(error);
-      throw new HttpException('Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-  }
+  //     const users = await this.usersService.findNearestUsers(parsedLat, parsedLon, parsedDistance);
+  //     return users;
+  //   } catch (error) {
+  //     console.error(error);
+  //     throw new HttpException('Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
+  //   }
+  // }
 
 
   // @Put(':id')

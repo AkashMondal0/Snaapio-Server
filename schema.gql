@@ -72,6 +72,7 @@ type Author {
   fileUrl: [AssetUrls!]
   privateKey: String
   publicKey: String
+  distance: Float
 }
 
 type Friendship {
@@ -107,6 +108,7 @@ type Profile {
   fileUrl: [AssetUrls!]
   privateKey: String
   publicKey: String
+  distance: Float
   postCount: Float
   followerCount: Float
   followingCount: Float
@@ -274,6 +276,10 @@ input GraphQLPageQuery {
 }
 
 input GraphQLLocationQuery {
+  id: String
+  privateKey: String
+  offset: Float
+  limit: Float
   latitude: Float!
   longitude: Float!
   distance: Float!

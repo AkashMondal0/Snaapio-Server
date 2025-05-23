@@ -1,4 +1,4 @@
-import { Field, InputType } from '@nestjs/graphql';
+import { Field, InputType, PartialType } from '@nestjs/graphql';
 
 @InputType()
 export class GraphQLPageQuery {
@@ -17,7 +17,7 @@ export class GraphQLPageQuery {
 }
 
 @InputType()
-export class GraphQLLocationQuery {
+export class GraphQLLocationQuery extends PartialType(GraphQLPageQuery) {
   @Field(() => Number)
   latitude: number;
 

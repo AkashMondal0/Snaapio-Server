@@ -32,7 +32,7 @@ export class UsersResolver {
   @UseGuards(GqlAuthGuard)
   @Query(() => [Author], { name: 'findNearestUsers' })
   findNearestUsers(@SessionUserGraphQl() user: Author, @Args("graphQLPageQuery") graphQLPageQuery: GraphQLLocationQuery) {
-    return this.usersService.findNearestUsers(graphQLPageQuery.latitude, graphQLPageQuery.latitude, graphQLPageQuery.distance)
+    return this.usersService.findNearestUsers(user, graphQLPageQuery.latitude, graphQLPageQuery.longitude, graphQLPageQuery.distance)
   }
 
   @UseGuards(GqlAuthGuard)
