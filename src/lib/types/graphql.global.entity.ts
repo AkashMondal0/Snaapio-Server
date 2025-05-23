@@ -17,6 +17,18 @@ export class GraphQLPageQuery {
 }
 
 @InputType()
+export class GraphQLLocationQuery {
+  @Field(() => Number)
+  latitude: number;
+
+  @Field(() => Number)
+  longitude: number;
+
+  @Field(() => Number)
+  distance: number;
+}
+
+@InputType()
 export class TypingStatusInput {
 
   @Field(() => Boolean, { defaultValue: false })

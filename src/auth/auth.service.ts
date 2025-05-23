@@ -145,11 +145,12 @@ export class AuthService {
         profilePicture: UserSchema.profilePicture,
         bio: UserSchema.bio,
         website: UserSchema.website,
-        privateKey: UserSchema.privateKey,
-        publicKey: UserSchema.publicKey
+        publicKey: UserSchema.publicKey,
+        privateKey: AccountSchema.privateKey,
       })
         .from(UserSchema)
         .leftJoin(UserPasswordSchema, eq(UserSchema.id, UserPasswordSchema.id))
+        .leftJoin(AccountSchema, eq(UserSchema.id, AccountSchema.id))
         .where(or(eq(UserSchema.email, email), eq(UserSchema.username, email)))
         .limit(1)
 
@@ -200,23 +201,22 @@ export class AuthService {
         username: userCredential.username,
         name: userCredential.name,
         email: userCredential.email,
-        privateKey: privateKey,
         publicKey: publicKey
       }).returning({
         id: UserSchema.id,
         username: UserSchema.username,
         name: UserSchema.name,
         email: UserSchema.email,
-        profilePicture: UserSchema.lastStatusUpdate,
+        profilePicture: UserSchema.profilePicture,
         bio: UserSchema.bio,
         lastStatusUpdate: UserSchema.lastStatusUpdate,
         website: UserSchema.website,
-        privateKey: UserSchema.privateKey,
         publicKey: UserSchema.publicKey
       })
 
       await this.drizzleProvider.db.insert(AccountSchema).values({
         id: newUser[0].id,
+        privateKey: privateKey,
       });
 
       await this.drizzleProvider.db.insert(UserPasswordSchema).values({
@@ -233,7 +233,7 @@ export class AuthService {
         return null;
       };
 
-      return newUser[0] as any;
+      return { ...newUser[0], privateKey } as any;
     } catch (error) {
       Logger.error(`createUser Error:`, error)
       return null

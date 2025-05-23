@@ -241,6 +241,7 @@ type RequestForCall {
 type Query {
   findUserProfile(graphQLPageQuery: GraphQLPageQuery!): Profile!
   findUsersByKeyword(graphQLPageQuery: GraphQLPageQuery!): [Author!]!
+  findNearestUsers(graphQLPageQuery: GraphQLLocationQuery!): [Author!]!
   getSession: Author!
   feedTimelineConnection(graphQLPageQuery: GraphQLPageQuery!): [Post!]!
   shortFeedTimelineConnection(graphQLPageQuery: GraphQLPageQuery!): [Post!]!
@@ -270,6 +271,12 @@ input GraphQLPageQuery {
   privateKey: String
   offset: Float
   limit: Float
+}
+
+input GraphQLLocationQuery {
+  latitude: Float!
+  longitude: Float!
+  distance: Float!
 }
 
 input TypingStatusInput {

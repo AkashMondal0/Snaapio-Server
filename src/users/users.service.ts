@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { count, eq, exists, like, or, and, sql } from 'drizzle-orm';
+import { count, eq, exists, like, or, and, sql, cosineDistance } from 'drizzle-orm';
 import { GraphQLError } from 'graphql';
 import { DrizzleProvider } from 'src/db/drizzle/drizzle.provider';
 import { AccountSchema, FriendshipSchema, PostSchema, UserSchema } from 'src/db/drizzle/drizzle.schema';
@@ -54,8 +54,8 @@ export class UsersService {
         profilePicture: UserSchema.profilePicture,
         bio: UserSchema.bio,
         website: UserSchema.website,
-        isVerified: AccountSchema.isVerified,
-        isPrivate: sql<boolean>`COALESCE(${AccountSchema.isPrivate}, false)`.as('isPrivate'),
+        isVerified: UserSchema.isVerified,
+        isPrivate: sql<boolean>`COALESCE(${UserSchema.isPrivate}, false)`.as('isPrivate'),
         postCount: sql`COUNT(DISTINCT ${PostSchema.id}) AS postCount`,
         followerCount: sql<number>`COALESCE((
         SELECT COUNT(${FriendshipSchema.followingUserId})
@@ -84,12 +84,7 @@ export class UsersService {
       }).from(UserSchema)
         .where(eq(UserSchema.username, username))
         .leftJoin(PostSchema, eq(UserSchema.id, PostSchema.authorId))
-        .leftJoin(AccountSchema, eq(UserSchema.id, AccountSchema.id)) // Ensure correct join condition
-        .groupBy(
-          UserSchema.id,
-          AccountSchema.isVerified,
-          AccountSchema.isPrivate // Group by these fields to avoid aggregation errors
-        )
+        .groupBy(UserSchema.id)
         .limit(1);
 
       if (!data[0].id) {
@@ -175,6 +170,45 @@ export class UsersService {
       }
     } catch (error) {
       return null
+    }
+  }
+
+  async findNearestUsers(lat: number, lon: number, maxDistance: number): Promise<Profile[] | Error> {
+    // const lat = 00.00000;
+    // const lon = 00.0000;
+    // const maxDistance = 120; // in km
+
+    try {
+      const data = await this.drizzleProvider.db.execute(sql`
+    SELECT * FROM (
+      SELECT
+        ${UserSchema.id} AS id,
+        ${UserSchema.username} AS username,
+        ${UserSchema.email} AS email,
+        ${UserSchema.name} AS name,
+        ${UserSchema.profilePicture} AS profilePicture,
+        ${UserSchema.bio} AS bio,
+        ${UserSchema.website} AS website,
+        ${UserSchema.publicKey} AS publicKey,
+        (
+          6371 * acos(
+            cos(radians(${lat})) * cos(radians(${AccountSchema.latitude})) *
+            cos(radians(${AccountSchema.longitude}) - radians(${lon})) +
+            sin(radians(${lat})) * sin(radians(${AccountSchema.latitude}))
+          )
+        ) AS distance
+      FROM ${AccountSchema}
+      LEFT JOIN ${UserSchema} ON ${AccountSchema.id} = ${UserSchema.id}
+      WHERE ${AccountSchema.latitude} IS NOT NULL AND ${AccountSchema.longitude} IS NOT NULL
+    ) AS subquery
+    WHERE subquery.distance < ${maxDistance}
+    ORDER BY subquery.distance ASC
+    LIMIT 20`);
+
+      return data as any;
+    } catch (error) {
+      Logger.error(error);
+      throw new Error(error);
     }
   }
 }

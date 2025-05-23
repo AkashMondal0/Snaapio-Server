@@ -4,7 +4,7 @@ import configuration from 'src/configs/configuration';
 import Stripe from 'stripe';
 import { DrizzleProvider } from 'src/db/drizzle/drizzle.provider';
 import { eq } from 'drizzle-orm';
-import { AccountSchema, TransactionDetails } from 'src/db/drizzle/drizzle.schema';
+import { AccountSchema, TransactionDetails, UserSchema } from 'src/db/drizzle/drizzle.schema';
 import { Author } from 'src/users/entities/author.entity';
 const { STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY } = configuration();
 
@@ -74,9 +74,9 @@ export class PaymentService {
         yearlyPrice: data.yearlyPrice,
       });
 
-      await this.drizzleProvider.db.update(AccountSchema)
+      await this.drizzleProvider.db.update(UserSchema)
         .set({ isVerified: true })
-        .where(eq(AccountSchema.id, user.id));
+        .where(eq(UserSchema.id, user.id));
         return {}
     } catch (error) {
       console.error('Error updating user profile:', error);
