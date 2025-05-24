@@ -1,5 +1,5 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
@@ -26,7 +26,8 @@ import { ImageModule } from './image/image.module';
 import { AiModule } from './ai/ai.module';
 import { PaymentModule } from './payment/payment.module';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
-
+import { FileModule } from './file/file.module';
+import { BullModule } from '@nestjs/bull';
 
 @Module({
   imports: [
@@ -53,6 +54,16 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
         enabled: true, // Enable default system metrics
       },
     }),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        if (!configService.get<string>('REDIS_URL')) {
+          throw new Error('REDIS_URL env not found');
+        };
+        return { ...configService, url: configService.get<string>('REDIS_URL') };
+      }
+    }),
     AuthModule,
     UsersModule,
     PostModule,
@@ -67,10 +78,11 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
     CallSessionModule,
     ImageModule,
     AiModule,
-    PaymentModule
+    PaymentModule,
+    FileModule
   ],
   controllers: [AppController],
   providers: [AppService],
 })
 
-export class AppModule {}
+export class AppModule { }

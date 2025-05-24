@@ -9,7 +9,9 @@ export default () => ({
     /// Supabase
     SUPABASE_URL: process.env.SUPABASE_URL,
     SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
+    // google gen ai api key -- > https://ai.google.dev/gemini-api/docs
     AI_KEY: process.env.GEN_AI_API_KEY,
+    HOST_BASE_PATH: process.env.HOST_BASE_PATH,
 
     STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
