@@ -241,14 +241,14 @@ type RequestForCall {
 }
 
 type Query {
-  findUserProfile(graphQLPageQuery: GraphQLPageQuery!): Profile!
-  findUsersByKeyword(graphQLPageQuery: GraphQLPageQuery!): [Author!]!
-  findNearestUsers(graphQLPageQuery: GraphQLLocationQuery!): [Author!]!
-  getSession: Author!
   feedTimelineConnection(graphQLPageQuery: GraphQLPageQuery!): [Post!]!
   shortFeedTimelineConnection(graphQLPageQuery: GraphQLPageQuery!): [Post!]!
   findAllPosts(graphQLPageQuery: GraphQLPageQuery!): [Post!]!
   findOnePost(graphQLPageQuery: GraphQLPageQuery!): Post!
+  findUserProfile(graphQLPageQuery: GraphQLPageQuery!): Profile!
+  findUsersByKeyword(graphQLPageQuery: GraphQLPageQuery!): [Author!]!
+  findNearestUsers(graphQLPageQuery: GraphQLLocationQuery!): [Author!]!
+  getSession: Author!
   findAllComments(graphQLPageQuery: GraphQLPageQuery!): [Comment!]!
   findAllNotifications(graphQLPageQuery: GraphQLPageQuery!): [Notification!]!
   unseenNotifications: UnReadNotification!
@@ -294,8 +294,8 @@ input TypingStatusInput {
 }
 
 type Mutation {
-  updateUserProfile(UpdateUsersInput: UpdateUsersInput!): Author!
   createPost(createPostInput: CreatePostInput!): Post!
+  updateUserProfile(UpdateUsersInput: UpdateUsersInput!): Author!
   createComment(input: CreateCommentInput!): Comment!
   updateComment(input: UpdateCommentInput!): Comment!
   destroyComment(id: String!): Comment!
@@ -315,14 +315,19 @@ type Mutation {
   incomingCallAnswer(incomingCallAnswer: IncomingCallAnswerInput!): String!
 }
 
-input UpdateUsersInput {
-  username: String
-  email: String
-  name: String
-  profilePicture: String
-  bio: String
-  website: String
-  fileUrl: [InputAssets!] = []
+input CreatePostInput {
+  id: String
+  createdAt: String
+  content: String!
+  authorId: String!
+  title: String
+  status: String!
+  fileUrl: [InputAssets!]
+  song: [String!]
+  tags: [String!]
+  locations: [String!]
+  country: String
+  city: String
 }
 
 input InputAssets {
@@ -338,19 +343,14 @@ input InputAssets {
   id: String
 }
 
-input CreatePostInput {
-  id: String
-  createdAt: String
-  content: String!
-  authorId: String!
-  title: String
-  status: String!
-  fileUrl: [InputAssets!]
-  song: [String!]
-  tags: [String!]
-  locations: [String!]
-  country: String
-  city: String
+input UpdateUsersInput {
+  username: String
+  email: String
+  name: String
+  profilePicture: String
+  bio: String
+  website: String
+  fileUrl: [InputAssets!] = []
 }
 
 input CreateCommentInput {

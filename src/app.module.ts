@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
@@ -27,7 +27,7 @@ import { AiModule } from './ai/ai.module';
 import { PaymentModule } from './payment/payment.module';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { FileModule } from './file/file.module';
-import { BullModule } from '@nestjs/bull';
+import { QueueModule } from './queue/queue.module';
 
 @Module({
   imports: [
@@ -54,16 +54,7 @@ import { BullModule } from '@nestjs/bull';
         enabled: true, // Enable default system metrics
       },
     }),
-    BullModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        if (!configService.get<string>('REDIS_URL')) {
-          throw new Error('REDIS_URL env not found');
-        };
-        return { ...configService, url: configService.get<string>('REDIS_URL') };
-      }
-    }),
+    QueueModule,
     AuthModule,
     UsersModule,
     PostModule,
@@ -84,5 +75,6 @@ import { BullModule } from '@nestjs/bull';
   controllers: [AppController],
   providers: [AppService],
 })
+
 
 export class AppModule { }

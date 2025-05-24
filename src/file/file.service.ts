@@ -4,22 +4,13 @@ import { promisify } from 'util';
 import { promises as fs } from 'node:fs';
 import { exec } from 'node:child_process';
 import * as path from 'node:path';
-import { UploadData } from './types';
-import { Queue } from 'bull';
-import { InjectQueue } from '@nestjs/bull';
+import { UploadData, VideoOption } from './types';
 import { generateRandomString } from 'src/lib/id-generate';
 import { supabase } from 'src/lib/Supabase';
 import { PostService } from 'src/post/post.service';
+import { Queue } from 'bullmq';
+import { InjectQueue } from '@nestjs/bullmq';
 const execAsync = promisify(exec);
-
-type VideoOption = {
-  start: string;
-  end: string;
-  muted: string;
-  resize: string;
-  ratio: string;
-};
-
 @Injectable()
 export class FileService {
   private readonly logger = new Logger(FileService.name);
@@ -27,7 +18,7 @@ export class FileService {
 
   constructor(
     private configService: ConfigService,
-    @InjectQueue('work_queue') private workQueue: Queue,
+    @InjectQueue('VideoTranscodeQueue') private readonly  workQueue: Queue,
     private readonly postService: PostService
   ) {
     this.hostBasePath = this.configService.get<string>('HOST_BASE_PATH') ?? '';
@@ -166,13 +157,9 @@ export class FileService {
     try {
       await this.workQueue.add('video-transcode', { jobDir, jobId, url, videoOption },
         {
-          jobId,
-          removeOnComplete: {
-            age: 2000,
-          },
-          removeOnFail: {
-            age: 2000
-          },
+          jobId: jobId,
+          removeOnComplete: true,  // okay
+          removeOnFail: true,     // keep failed for debugging
         });
 
       const res = await this.postService.createShort({
@@ -184,7 +171,7 @@ export class FileService {
       });
 
       return {
-        // ...res,
+        ...res,
         state: "initial",
         url: url,
         id: jobId
