@@ -8,6 +8,8 @@ import { eq, or } from 'drizzle-orm';
 import { DrizzleProvider } from 'src/db/drizzle/drizzle.provider';
 import { Users } from 'src/users/entities/users.entity';
 import { generateRSAKeyPair } from 'src/lib/crypto/encrypt.decrypt';
+import { RedisProvider } from 'src/db/redis/redis.provider';
+import { Author } from 'src/users/entities/author.entity';
 
 export interface SignUpAndSignInResponse {
   id: string,
@@ -22,7 +24,8 @@ export interface SignUpAndSignInResponse {
 export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
-    private readonly drizzleProvider: DrizzleProvider
+    private readonly drizzleProvider: DrizzleProvider,
+    private readonly redisProvider: RedisProvider
   ) { }
   // 
   async signIn(response: FastifyReply, email: string, pass: string): Promise<SignUpAndSignInResponse | HttpException> {
@@ -114,7 +117,9 @@ export class AuthService {
     }
   }
 
-  async signOut(request: FastifyRequest, response: FastifyReply): Promise<string | HttpException> {
+  async signOut(request: FastifyRequest, response: FastifyReply,session:Author): Promise<string | HttpException> {
+
+    this.redisProvider.client.del(`notification:${session.id}`);
     for (const [key] of Object.entries(request.cookies)) {
       response.clearCookie(key)
     }

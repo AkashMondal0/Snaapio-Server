@@ -102,38 +102,6 @@ export class UsersService {
     }
   }
 
-  async updateProfile(user: Author, updateUsersInput: UpdateUsersInput): Promise<Author | GraphQLError> {
-    try {
-      const data = await this.drizzleProvider.db.update(UserSchema)
-        .set({
-          profilePicture: updateUsersInput.profilePicture,
-          name: updateUsersInput.name,
-          username: updateUsersInput.username,
-          email: updateUsersInput.email,
-          bio: updateUsersInput.bio,
-          website: updateUsersInput.website,
-          fileUrl: updateUsersInput.fileUrl ?? []
-        })
-        .where(eq(UserSchema.id, user.id))
-        .returning({
-          profilePicture: UserSchema.profilePicture,
-          name: UserSchema.name,
-          username: UserSchema.username,
-          email: UserSchema.email,
-          bio: UserSchema.bio,
-          website: UserSchema.website,
-          fileUrl: UserSchema.fileUrl
-        })
-
-      return data[0] as Author
-    } catch (error) {
-      Logger.error(error)
-      throw new GraphQLError('Internal Server Error', {
-        extensions: { code: 'INTERNAL_SERVER_ERROR' }
-      });
-    }
-  }
-
   // for meta data
   async findUserPublicData(username: string): Promise<Profile | null> {
     try {
@@ -175,6 +143,13 @@ export class UsersService {
 
   async findNearestUsers(user: Author, lat: number, lon: number, maxDistance: number): Promise<Author[] | Error> {
     try {
+      await this.drizzleProvider.db.update(AccountSchema)
+        .set({
+          latitude: lat,
+          longitude: lon
+        })
+        .where(eq(AccountSchema.id, user.id));
+
       const data = await this.drizzleProvider.db.execute(sql`
       SELECT * FROM (
         SELECT
@@ -222,4 +197,35 @@ export class UsersService {
     }
   }
 
+  async updateProfile(user: Author, updateUsersInput: UpdateUsersInput): Promise<Author | GraphQLError> {
+    try {
+      const data = await this.drizzleProvider.db.update(UserSchema)
+        .set({
+          profilePicture: updateUsersInput.profilePicture,
+          name: updateUsersInput.name,
+          username: updateUsersInput.username,
+          email: updateUsersInput.email,
+          bio: updateUsersInput.bio,
+          website: updateUsersInput.website,
+          fileUrl: updateUsersInput.fileUrl ?? []
+        })
+        .where(eq(UserSchema.id, user.id))
+        .returning({
+          profilePicture: UserSchema.profilePicture,
+          name: UserSchema.name,
+          username: UserSchema.username,
+          email: UserSchema.email,
+          bio: UserSchema.bio,
+          website: UserSchema.website,
+          fileUrl: UserSchema.fileUrl
+        })
+
+      return data[0] as Author
+    } catch (error) {
+      Logger.error(error)
+      throw new GraphQLError('Internal Server Error', {
+        extensions: { code: 'INTERNAL_SERVER_ERROR' }
+      });
+    }
+  }
 }

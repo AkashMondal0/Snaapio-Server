@@ -32,8 +32,8 @@ export class AuthController {
   @Version('1')
   @Post('logout')
   @UseGuards(MyAuthGuard)
-  async signOut(@Req() request: FastifyRequest, @Res({ passthrough: true }) response: FastifyReply) {
-    return this.authService.signOut(request, response);
+  async signOut(@RestApiSessionUser() session: Author, @Req() request: FastifyRequest, @Res({ passthrough: true }) response: FastifyReply) {
+    return this.authService.signOut(request, response, session);
   }
 
   @Version('1')
