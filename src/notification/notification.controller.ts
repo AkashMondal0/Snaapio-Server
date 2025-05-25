@@ -14,54 +14,54 @@ import { Author } from 'src/users/entities/author.entity';
 export class NotificationController {
     constructor(private readonly redisProvider: RedisProvider) { }
 
-    @Version('1')
-    @Get('/send')
-    async sent(@Req() request: FastifyRequest, @Res() response: FastifyReply): Promise<any> {
-        // const { pushToken, title, body, imageUrl } = request.body as any;
+    // @Version('1')
+    // @Get('/send')
+    // async sent(@Req() request: FastifyRequest, @Res() response: FastifyReply): Promise<any> {
+    //     // const { pushToken, title, body, imageUrl } = request.body as any;
 
-        // Validate push token
-        if (!Expo.isExpoPushToken("ExponentPushToken[aPjYSFH7guogtVIDiwi8OS]")) {
-            return response.send(`Invalid Expo push token`);
-        }
+    //     // Validate push token
+    //     if (!Expo.isExpoPushToken("ExponentPushToken[aPjYSFH7guogtiuyti8OS]")) {
+    //         return response.send(`Invalid Expo push token`);
+    //     }
 
-        const message = {
-            to: "ExponentPushToken[aPjYSFH7guogtVIDiwi8OS]",
-            sound: 'default',
-            title: 'Default Title',
-            body: 'Default body',
-            channelId: 'default',
-            data: { withSome: 'data' },
-            richContent: {
-                image: 'https://example.com/fallback-image.jpg',
-            },
-        };
+    //     const message = {
+    //         to: "ExponentPushToken[aPjYSFH7guogtVIDiwi8OS]",
+    //         sound: 'default',
+    //         title: 'Default Title',
+    //         body: 'Default body',
+    //         channelId: 'default',
+    //         data: { withSome: 'data' },
+    //         richContent: {
+    //             image: 'https://example.com/fallback-image.jpg',
+    //         },
+    //     };
 
-        try {
-            const chunks = expo.chunkPushNotifications([message, message]);
+    //     try {
+    //         const chunks = expo.chunkPushNotifications([message, message]);
 
-            const tickets: any = [];
+    //         const tickets: any = [];
 
-            for (let chunk of chunks) {
-                try {
-                    const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
-                    tickets.push(...ticketChunk);
-                } catch (error) {
-                    console.error('Chunk error:', error);
-                    return response.send(`Failed to send notification`);
-                }
-            }
-            return response.send(`Expo push token success`);
-        } catch (err) {
-            console.error('Notification error:', err);
-            return response.send(`Failed to send notification`);
-        }
-    }
+    //         for (let chunk of chunks) {
+    //             try {
+    //                 const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+    //                 tickets.push(...ticketChunk);
+    //             } catch (error) {
+    //                 console.error('Chunk error:', error);
+    //                 return response.send(`Failed to send notification`);
+    //             }
+    //         }
+    //         return response.send(`Expo push token success`);
+    //     } catch (err) {
+    //         console.error('Notification error:', err);
+    //         return response.send(`Failed to send notification`);
+    //     }
+    // }
 
     @Version('1')
     @Post(':id')
     @UseGuards(MyAuthGuard)
     async getMetrics(@RestApiSessionUser() session: Author, @Param('id') id: string,) {
-        await this.redisProvider.client.set(`notification:${session.id}`, id, "EX", 3888000);
+        await this.redisProvider.client.set(`notification:${session.id}`, id, "EX", 1000 * 60 * 60 * 6);
         return "success"
     }
 

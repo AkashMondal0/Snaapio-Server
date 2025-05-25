@@ -1,4 +1,4 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
@@ -26,7 +26,8 @@ import { ImageModule } from './image/image.module';
 import { AiModule } from './ai/ai.module';
 import { PaymentModule } from './payment/payment.module';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
-
+import { FileModule } from './file/file.module';
+import { QueueModule } from './queue/queue.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
         enabled: true, // Enable default system metrics
       },
     }),
+    QueueModule,
     AuthModule,
     UsersModule,
     PostModule,
@@ -67,10 +69,12 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
     CallSessionModule,
     ImageModule,
     AiModule,
-    PaymentModule
+    PaymentModule,
+    FileModule
   ],
   controllers: [AppController],
   providers: [AppService],
 })
 
-export class AppModule {}
+
+export class AppModule { }

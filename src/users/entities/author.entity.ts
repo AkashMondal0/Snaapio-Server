@@ -38,7 +38,10 @@ export class Author {
 
   @Field(() => String, { nullable: true })
   privateKey?: string
-  
+
   @Field(() => String, { nullable: true })
   publicKey?: string
+
+  @Field(() => Number, { nullable: true })
+  distance?: number | unknown;
 }

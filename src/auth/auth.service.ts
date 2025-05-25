@@ -8,6 +8,8 @@ import { eq, or } from 'drizzle-orm';
 import { DrizzleProvider } from 'src/db/drizzle/drizzle.provider';
 import { Users } from 'src/users/entities/users.entity';
 import { generateRSAKeyPair } from 'src/lib/crypto/encrypt.decrypt';
+import { RedisProvider } from 'src/db/redis/redis.provider';
+import { Author } from 'src/users/entities/author.entity';
 
 export interface SignUpAndSignInResponse {
   id: string,
@@ -22,7 +24,8 @@ export interface SignUpAndSignInResponse {
 export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
-    private readonly drizzleProvider: DrizzleProvider
+    private readonly drizzleProvider: DrizzleProvider,
+    private readonly redisProvider: RedisProvider
   ) { }
   // 
   async signIn(response: FastifyReply, email: string, pass: string): Promise<SignUpAndSignInResponse | HttpException> {
@@ -114,7 +117,9 @@ export class AuthService {
     }
   }
 
-  async signOut(request: FastifyRequest, response: FastifyReply): Promise<string | HttpException> {
+  async signOut(request: FastifyRequest, response: FastifyReply,session:Author): Promise<string | HttpException> {
+
+    this.redisProvider.client.del(`notification:${session.id}`);
     for (const [key] of Object.entries(request.cookies)) {
       response.clearCookie(key)
     }
@@ -145,11 +150,12 @@ export class AuthService {
         profilePicture: UserSchema.profilePicture,
         bio: UserSchema.bio,
         website: UserSchema.website,
-        privateKey: UserSchema.privateKey,
-        publicKey: UserSchema.publicKey
+        publicKey: UserSchema.publicKey,
+        privateKey: AccountSchema.privateKey,
       })
         .from(UserSchema)
         .leftJoin(UserPasswordSchema, eq(UserSchema.id, UserPasswordSchema.id))
+        .leftJoin(AccountSchema, eq(UserSchema.id, AccountSchema.id))
         .where(or(eq(UserSchema.email, email), eq(UserSchema.username, email)))
         .limit(1)
 
@@ -200,23 +206,22 @@ export class AuthService {
         username: userCredential.username,
         name: userCredential.name,
         email: userCredential.email,
-        privateKey: privateKey,
         publicKey: publicKey
       }).returning({
         id: UserSchema.id,
         username: UserSchema.username,
         name: UserSchema.name,
         email: UserSchema.email,
-        profilePicture: UserSchema.lastStatusUpdate,
+        profilePicture: UserSchema.profilePicture,
         bio: UserSchema.bio,
         lastStatusUpdate: UserSchema.lastStatusUpdate,
         website: UserSchema.website,
-        privateKey: UserSchema.privateKey,
         publicKey: UserSchema.publicKey
       })
 
       await this.drizzleProvider.db.insert(AccountSchema).values({
         id: newUser[0].id,
+        privateKey: privateKey,
       });
 
       await this.drizzleProvider.db.insert(UserPasswordSchema).values({
@@ -233,7 +238,7 @@ export class AuthService {
         return null;
       };
 
-      return newUser[0] as any;
+      return { ...newUser[0], privateKey } as any;
     } catch (error) {
       Logger.error(`createUser Error:`, error)
       return null

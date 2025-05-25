@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { count, eq, exists, like, or, and, sql } from 'drizzle-orm';
+import { count, eq, exists, like, or, and, sql, cosineDistance } from 'drizzle-orm';
 import { GraphQLError } from 'graphql';
 import { DrizzleProvider } from 'src/db/drizzle/drizzle.provider';
 import { AccountSchema, FriendshipSchema, PostSchema, UserSchema } from 'src/db/drizzle/drizzle.schema';
@@ -54,8 +54,8 @@ export class UsersService {
         profilePicture: UserSchema.profilePicture,
         bio: UserSchema.bio,
         website: UserSchema.website,
-        isVerified: AccountSchema.isVerified,
-        isPrivate: sql<boolean>`COALESCE(${AccountSchema.isPrivate}, false)`.as('isPrivate'),
+        isVerified: UserSchema.isVerified,
+        isPrivate: sql<boolean>`COALESCE(${UserSchema.isPrivate}, false)`.as('isPrivate'),
         postCount: sql`COUNT(DISTINCT ${PostSchema.id}) AS postCount`,
         followerCount: sql<number>`COALESCE((
         SELECT COUNT(${FriendshipSchema.followingUserId})
@@ -84,12 +84,7 @@ export class UsersService {
       }).from(UserSchema)
         .where(eq(UserSchema.username, username))
         .leftJoin(PostSchema, eq(UserSchema.id, PostSchema.authorId))
-        .leftJoin(AccountSchema, eq(UserSchema.id, AccountSchema.id)) // Ensure correct join condition
-        .groupBy(
-          UserSchema.id,
-          AccountSchema.isVerified,
-          AccountSchema.isPrivate // Group by these fields to avoid aggregation errors
-        )
+        .groupBy(UserSchema.id)
         .limit(1);
 
       if (!data[0].id) {
@@ -103,38 +98,6 @@ export class UsersService {
       Logger.error(error)
       throw new GraphQLError('Internal Server Error', {
         extensions: { code: 'PAGE_NOT_FOUND' }
-      });
-    }
-  }
-
-  async updateProfile(user: Author, updateUsersInput: UpdateUsersInput): Promise<Author | GraphQLError> {
-    try {
-      const data = await this.drizzleProvider.db.update(UserSchema)
-        .set({
-          profilePicture: updateUsersInput.profilePicture,
-          name: updateUsersInput.name,
-          username: updateUsersInput.username,
-          email: updateUsersInput.email,
-          bio: updateUsersInput.bio,
-          website: updateUsersInput.website,
-          fileUrl: updateUsersInput.fileUrl ?? []
-        })
-        .where(eq(UserSchema.id, user.id))
-        .returning({
-          profilePicture: UserSchema.profilePicture,
-          name: UserSchema.name,
-          username: UserSchema.username,
-          email: UserSchema.email,
-          bio: UserSchema.bio,
-          website: UserSchema.website,
-          fileUrl: UserSchema.fileUrl
-        })
-
-      return data[0] as Author
-    } catch (error) {
-      Logger.error(error)
-      throw new GraphQLError('Internal Server Error', {
-        extensions: { code: 'INTERNAL_SERVER_ERROR' }
       });
     }
   }
@@ -175,6 +138,94 @@ export class UsersService {
       }
     } catch (error) {
       return null
+    }
+  }
+
+  async findNearestUsers(user: Author, lat: number, lon: number, maxDistance: number): Promise<Author[] | Error> {
+    try {
+      await this.drizzleProvider.db.update(AccountSchema)
+        .set({
+          latitude: lat,
+          longitude: lon
+        })
+        .where(eq(AccountSchema.id, user.id));
+
+      const data = await this.drizzleProvider.db.execute(sql`
+      SELECT * FROM (
+        SELECT
+          ${UserSchema.id} AS id,
+          ${UserSchema.username} AS username,
+          ${UserSchema.email} AS email,
+          ${UserSchema.name} AS name,
+          ${UserSchema.profilePicture} AS profilePicture,
+          ${UserSchema.bio} AS bio,
+          ${UserSchema.website} AS website,
+          ${UserSchema.publicKey} AS publicKey,
+          (
+            6371 * acos(
+              cos(radians(${lat})) * cos(radians(${AccountSchema.latitude})) *
+              cos(radians(${AccountSchema.longitude}) - radians(${lon})) +
+              sin(radians(${lat})) * sin(radians(${AccountSchema.latitude}))
+            )
+          ) AS distance,
+          (
+            SELECT EXISTS(
+              SELECT 1
+              FROM ${FriendshipSchema}
+              WHERE ${FriendshipSchema.authorUsername} = ${user.username}
+                AND ${FriendshipSchema.followingUsername} = ${UserSchema.username}
+            )
+          ) AS "following"
+        FROM ${AccountSchema}
+        LEFT JOIN ${UserSchema} ON ${AccountSchema.id} = ${UserSchema.id}
+        WHERE ${AccountSchema.latitude} IS NOT NULL AND ${AccountSchema.longitude} IS NOT NULL
+      ) AS subquery
+      WHERE subquery.distance < ${maxDistance}
+        AND subquery.following = false
+        AND subquery.username != ${user.username}
+      ORDER BY subquery.distance ASC
+      LIMIT 20`);
+
+      return data.map((i) => ({
+        ...i,
+        profilePicture: i.profilepicture,
+        publicKey: i.publickey
+      })) as any[];
+    } catch (error) {
+      Logger.error(error);
+      throw new Error(error);
+    }
+  }
+
+  async updateProfile(user: Author, updateUsersInput: UpdateUsersInput): Promise<Author | GraphQLError> {
+    try {
+      const data = await this.drizzleProvider.db.update(UserSchema)
+        .set({
+          profilePicture: updateUsersInput.profilePicture,
+          name: updateUsersInput.name,
+          username: updateUsersInput.username,
+          email: updateUsersInput.email,
+          bio: updateUsersInput.bio,
+          website: updateUsersInput.website,
+          fileUrl: updateUsersInput.fileUrl ?? []
+        })
+        .where(eq(UserSchema.id, user.id))
+        .returning({
+          profilePicture: UserSchema.profilePicture,
+          name: UserSchema.name,
+          username: UserSchema.username,
+          email: UserSchema.email,
+          bio: UserSchema.bio,
+          website: UserSchema.website,
+          fileUrl: UserSchema.fileUrl
+        })
+
+      return data[0] as Author
+    } catch (error) {
+      Logger.error(error)
+      throw new GraphQLError('Internal Server Error', {
+        extensions: { code: 'INTERNAL_SERVER_ERROR' }
+      });
     }
   }
 }

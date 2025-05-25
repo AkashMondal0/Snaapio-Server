@@ -7,12 +7,12 @@ import { SessionUserGraphQl } from 'src/decorator/session.decorator';
 import { Author } from './entities/author.entity';
 import { Users } from './entities/users.entity';
 import { UpdateUsersInput } from './dto/update-users.input';
-import { GqlRolesGuard } from 'src/auth/guard/Gql.roles.guard';
-import { Roles } from 'src/auth/SetMetadata';
-import { Role } from 'src/lib/types';
-import { Throttle } from '@nestjs/throttler';
-import { GqlThrottlerGuard } from 'src/auth/guard/GqlThrottler.Guard';
-import { GraphQLPageQuery } from 'src/lib/types/graphql.global.entity';
+// import { GqlRolesGuard } from 'src/auth/guard/Gql.roles.guard';
+// import { Roles } from 'src/auth/SetMetadata';
+// import { Role } from 'src/lib/types';
+// import { Throttle } from '@nestjs/throttler';
+// import { GqlThrottlerGuard } from 'src/auth/guard/GqlThrottler.Guard';
+import { GraphQLLocationQuery, GraphQLPageQuery } from 'src/lib/types/graphql.global.entity';
 @Resolver(() => Users)
 export class UsersResolver {
   constructor(private readonly usersService: UsersService) { }
@@ -27,6 +27,12 @@ export class UsersResolver {
   @Query(() => [Author], { name: 'findUsersByKeyword' })
   findUsersByKeyword(@SessionUserGraphQl() user: Author, @Args("graphQLPageQuery") graphQLPageQuery: GraphQLPageQuery) {
     return this.usersService.findUsersByKeyword(graphQLPageQuery.id);
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Query(() => [Author], { name: 'findNearestUsers' })
+  findNearestUsers(@SessionUserGraphQl() user: Author, @Args("graphQLPageQuery") graphQLPageQuery: GraphQLLocationQuery) {
+    return this.usersService.findNearestUsers(user, graphQLPageQuery.latitude, graphQLPageQuery.longitude, graphQLPageQuery.distance)
   }
 
   @UseGuards(GqlAuthGuard)

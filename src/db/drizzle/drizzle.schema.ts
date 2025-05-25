@@ -10,7 +10,8 @@ import {
     integer,
     uuid,
     uniqueIndex,
-    jsonb
+    jsonb,
+    doublePrecision
 } from "drizzle-orm/pg-core";
 import { AiChatMessages } from "src/ai/entities/ai.entity";
 import { generateRandomString } from "src/lib/id-generate";
@@ -31,15 +32,13 @@ export const UserSchema = pgTable('users', {
     name: text('name').notNull(),
     email: text('email').notNull().unique(),
     profilePicture: varchar('profile_picture'),
-    fileUrl: jsonb('file_url').$type<any[]>().notNull().default(sql`'[]'::jsonb`),
     bio: text('bio'),
-    lastStatusUpdate: timestamp('last_status_update'),
-    website: text('website')
-        .array()
-        .notNull()
-        .default(sql`'{}'::text[]`),
+    fileUrl: jsonb('file_url').$type<any[]>().notNull().default(sql`'[]'::jsonb`),
+    website: text('website').array().notNull().default(sql`'{}'::text[]`),
     publicKey: text('public_key').notNull(),
-    privateKey: text('private_key').notNull(),
+    lastStatusUpdate: timestamp('last_status_update'),
+    isPrivate: boolean('is_private').notNull().default(false),
+    isVerified: boolean('is_verified').notNull().default(false),
 }, (users) => ({
     uniqueIdx: uniqueIndex('unique_idx').on(users.email),
     usernameIdx: uniqueIndex('username_idx').on(users.username),
@@ -48,15 +47,18 @@ export const UserSchema = pgTable('users', {
 
 export const AccountSchema = pgTable('account', {
     id: uuid('user_id').notNull().references(() => UserSchema.id, { onDelete: 'cascade', onUpdate: 'cascade' }).primaryKey(),
-    isVerified: boolean('is_verified').notNull().default(false),
-    isPrivate: boolean('is_private').notNull().default(false),
     roles: roleEnum('roles').array().notNull().default(sql`ARRAY['user']::role[]`),
-    // additional fields
-    location: text('location'),
-    phone: integer('phone'),
+    // address
+    latitude: doublePrecision('latitude'),
+    longitude: doublePrecision('longitude'),
+    city: varchar('city', { length: 100 }),
+    country: varchar('country', { length: 100 }),
     locale: varchar('locale'),
-    timeFormat: integer('time_format').default(12),
+    timeZone: integer('time_zone').default(12),
+    // additional fields 
+    phone: integer('phone'),
     // Used to lock the user account
+    privateKey: text('private_key').notNull(),
     locked: boolean('locked').notNull().default(false),
     accessTokenExpires: timestamp('access_token_expires'),
     AccessToken: varchar('access_token').array(),

@@ -122,7 +122,7 @@ export class AiService {
             try {
               const fileExt = mime.extension(inlineData.mimeType);
               const filename = `${generateRandomString({})}_${candidateIndex}_${partIndex}.${fileExt}`;
-              const filePath = `ai/${userId}/${filename}`;
+              const filePath = `/ai/${userId}/${filename}`;
 
               const fileBuffer = Buffer.from(inlineData.data, 'base64');
               const compressedImage = await sharp(fileBuffer)
