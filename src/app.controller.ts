@@ -17,12 +17,12 @@ export class AppController {
     return "Load App";
   }
 
-  @Version('1')
-  @Get('cookie')
-  cookieSet(@Req() request: FastifyRequest, @Res({ passthrough: true }) response: FastifyReply): any {
-    // this.httpRequestsTotal.labels(request.method, '/cookie', '200').inc(); // Increment the counter
-    return response.send(request.cookies);
-  }
+  // @Version('1')
+  // @Get('cookie')
+  // cookieSet(@Req() request: FastifyRequest, @Res({ passthrough: true }) response: FastifyReply): any {
+  //   // this.httpRequestsTotal.labels(request.method, '/cookie', '200').inc(); // Increment the counter
+  //   return response.send(request.cookies);
+  // }
 
   @Version('1')
   @Get('/metrics')
@@ -31,23 +31,23 @@ export class AppController {
     res.send(await register.metrics());
   }
 
-  @Version('1')
-  @Get('/error')
-  async Test(@Res() res: FastifyReply) {
-    Logger.error("Test Error");
-    return res.send("Test Error");
-  }
+  // @Version('1')
+  // @Get('/error')
+  // async Test(@Res() res: FastifyReply) {
+  //   Logger.error("Test Error");
+  //   return res.send("Test Error");
+  // }
 
-  @Version('1')
-  @Get("cookie-set")
-  findAll(@Req() request: FastifyRequest, @Res({ passthrough: true }) response: FastifyReply) {
-    // this.httpRequestsTotal.labels(request.method, '/cookie-set', '200').inc(); // Increment the counter
-    response.setCookie('test', 'test_page', {
-      path: "/",
-      maxAge: 1000 * 60 * 60 * 24 * 30,
-      httpOnly: true,
-      priority: "medium"
-    });
-    return response.send(`Cookie value: ${`value`}`);
-  }
+//   @Version('1')
+//   @Get("cookie-set")
+//   findAll(@Req() request: FastifyRequest, @Res({ passthrough: true }) response: FastifyReply) {
+//     // this.httpRequestsTotal.labels(request.method, '/cookie-set', '200').inc(); // Increment the counter
+//     response.setCookie('test', 'test_page', {
+//       path: "/",
+//       maxAge: 1000 * 60 * 60 * 24 * 30,
+//       httpOnly: true,
+//       priority: "medium"
+//     });
+//     return response.send(`Cookie value: ${`value`}`);
+//   }
 }
