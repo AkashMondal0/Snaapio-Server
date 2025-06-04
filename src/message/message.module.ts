@@ -8,8 +8,8 @@ import { EventsModule } from 'src/event/event.module';
 import { NotificationModule } from 'src/notification/notification.module';
 
 @Module({
-  imports: [RedisModule, DrizzleModule, EventsModule,NotificationModule],
-  providers: [MessageResolver, MessageService,EventsModule],
+  imports: [RedisModule, DrizzleModule, EventsModule, NotificationModule],
+  providers: [MessageResolver, MessageService, EventsModule],
   controllers: [MessageController],
 })
 export class MessageModule { }

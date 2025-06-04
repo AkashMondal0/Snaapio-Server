@@ -6,17 +6,27 @@ import { AccountSchema, FriendshipSchema, PostSchema, UserSchema } from 'src/db/
 import { Author } from './entities/author.entity';
 import { Profile } from './entities/profile.entity';
 import { UpdateUsersInput } from './dto/update-users.input';
+import { RedisProvider } from 'src/db/redis/redis.provider';
+import { dataParser } from 'src/lib/dataParser';
 
 @Injectable()
 export class UsersService {
   constructor(
-    private readonly drizzleProvider: DrizzleProvider
+    private readonly drizzleProvider: DrizzleProvider,
+    private readonly redisProvider: RedisProvider
   ) { }
 
   async findUsersByKeyword(userKeyword: string): Promise<Author[] | []> {
     try {
       const keywordForUsername = userKeyword.toLowerCase().trim();
       const keywordForName = userKeyword.trim();
+      const searchKey = `search:users:${keywordForUsername + keywordForName}`;
+
+      let results = await this.redisProvider.client.get(searchKey);
+      if (results) {
+        return dataParser(results);
+      }
+
       const data = await this.drizzleProvider.db.select({
         id: UserSchema.id,
         username: UserSchema.username,
@@ -36,7 +46,7 @@ export class UsersService {
       if (data.length <= 0 || !data[0].id) {
         return [];
       }
-
+      await this.redisProvider.client.set(searchKey, JSON.stringify(data), 'EX', 30); // short TTL
       return data;
     } catch (error) {
       Logger.error(error)
@@ -46,6 +56,13 @@ export class UsersService {
 
   async findProfile(user: Author, username: string): Promise<Profile | GraphQLError> {
     try {
+      const profileKey = `profile:user:${user.id}`;
+
+      let profile = await this.redisProvider.client.get(profileKey);
+      if (profile) {
+        return dataParser(profile) as Profile;
+      }
+
       const data = await this.drizzleProvider.db.select({
         id: UserSchema.id,
         username: UserSchema.username,
@@ -92,6 +109,8 @@ export class UsersService {
           extensions: { code: 'PAGE_NOT_FOUND' }
         })
       };
+
+      await this.redisProvider.client.set(profileKey, JSON.stringify(data[0]), 'EX', 300); // 5 min
 
       return data[0] as Profile;
     } catch (error) {

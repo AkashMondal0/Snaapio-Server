@@ -9,6 +9,7 @@ import { Conversation } from './entities/conversation.entity';
 import { Author } from 'src/users/entities/author.entity';
 import { GraphQLPageQuery } from 'src/lib/types/graphql.global.entity';
 import { decryptForUser } from 'src/lib/crypto/encrypt.decrypt';
+import { dataParser } from 'src/lib/dataParser';
 @Injectable()
 export class ConversationService {
   constructor(
@@ -80,6 +81,13 @@ export class ConversationService {
         extensions: { code: 'KEY_NOT_FOUND' }
       })
     };
+
+    const convoKey = `chat:user:${user.id}:convos`;
+    let convos = await this.redisProvider.client.get(convoKey);
+    if (convos) {
+      return dataParser(convos);
+    }
+
     const data = await this.drizzleProvider.db.select({
       id: ConversationSchema.id,
       authorId: ConversationSchema.authorId,
@@ -141,10 +149,17 @@ export class ConversationService {
       }
     })
 
+    await this.redisProvider.client.set(convoKey, JSON.stringify(newData), 'EX', 10);
     return newData as Conversation[]
   }
 
   async findOne(user: Author, graphQLPageQuery: GraphQLPageQuery): Promise<Conversation | GraphQLError> {
+
+    const convoKey = `chat:user:${user.id}:convo:${graphQLPageQuery.id}`;
+    let convos = await this.redisProvider.client.get(convoKey);
+    if (convos) {
+      return dataParser(convos);
+    }
 
     const data = await this.drizzleProvider.db.select({
       id: ConversationSchema.id,
@@ -184,6 +199,8 @@ export class ConversationService {
     if (!data[0]) {
       throw new GraphQLError("Conversation not found")
     }
+
+    await this.redisProvider.client.set(convoKey, JSON.stringify(data[0]), 'EX', 10);
 
     return data[0];
   }

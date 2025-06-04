@@ -9,14 +9,24 @@ import { GraphQLPageQuery } from 'src/lib/types/graphql.global.entity';
 import { Author } from 'src/users/entities/author.entity';
 import { Post } from './entities/post.entity';
 import { shortUploadType } from 'src/image/entities/image.entity';
-
+import { RedisProvider } from 'src/db/redis/redis.provider';
+import { dataParser } from 'src/lib/dataParser';
 
 @Injectable()
 export class PostService {
-  constructor(private readonly drizzleProvider: DrizzleProvider) { }
+  constructor(private readonly drizzleProvider: DrizzleProvider,
+    private readonly redisProvider: RedisProvider
+  ) { }
 
   async feed(loggedUser: Author, limitAndOffset: GraphQLPageQuery): Promise<Post[]> {
     try {
+      const cacheKey = `feed:user:${loggedUser.id}:offset:${limitAndOffset.offset}`;
+      let feed = await this.redisProvider.client.get(cacheKey) as any;
+
+      if (feed) {
+        return dataParser(feed);
+      }
+
       const data = await this.drizzleProvider.db.select({
         id: PostSchema.id,
         content: PostSchema.content,
@@ -72,6 +82,7 @@ export class PostService {
         .limit(limitAndOffset.limit ?? 12)
         .offset(limitAndOffset.offset ?? 0);
 
+      await this.redisProvider.client.set(cacheKey, JSON.stringify(data), 'EX', 60); // short TTL
       return data as Post[];
     } catch (error) {
       Logger.error(error);
@@ -83,6 +94,13 @@ export class PostService {
 
   async shortFeed(loggedUser: Author, limitAndOffset: GraphQLPageQuery): Promise<Post[]> {
     try {
+      const cacheKey = `shortFeed:user:${loggedUser.id}:offset:${limitAndOffset.offset}`;
+      let feed = await this.redisProvider.client.get(cacheKey) as any;
+
+      if (feed) {
+        return dataParser(feed);
+      }
+
       const data = await this.drizzleProvider.db.select({
         id: PostSchema.id,
         content: PostSchema.content,
@@ -139,6 +157,7 @@ export class PostService {
         .limit(limitAndOffset.limit ?? 12)
         .offset(limitAndOffset.offset ?? 0);
 
+      await this.redisProvider.client.set(cacheKey, JSON.stringify(data), 'EX', 60); // short TTL
       return data as Post[];
     } catch (error) {
       Logger.error(error);

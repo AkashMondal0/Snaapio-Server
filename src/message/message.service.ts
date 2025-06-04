@@ -12,6 +12,7 @@ import { decryptForUser, encryptForParticipants } from 'src/lib/crypto/encrypt.d
 import { RedisProvider } from 'src/db/redis/redis.provider';
 import { GraphQLError } from 'graphql';
 import { NotificationService } from 'src/notification/notification.service';
+import { dataParser } from 'src/lib/dataParser';
 
 @Injectable()
 export class MessageService {
@@ -28,6 +29,13 @@ export class MessageService {
         extensions: { code: 'KEY_NOT_FOUND' }
       })
     };
+
+    const cacheKey = `messages:${graphQLPageQuery.id}:${user.id}:${graphQLPageQuery.limit}:${graphQLPageQuery.offset}`;
+    let messages = await this.redisProvider.client.get(cacheKey) as any;
+
+    if (messages) {
+      return dataParser(messages);
+    }
 
     const data = await this.drizzleProvider.db.select({
       id: MessagesSchema.id,
@@ -72,6 +80,7 @@ export class MessageService {
       }
     });
 
+    await this.redisProvider.client.set(cacheKey, JSON.stringify(nData.reverse()), 'EX', 60 * 60 * 24 * 7); // 7 days
     return nData.reverse();
   }
 
