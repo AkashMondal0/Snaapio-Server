@@ -7,15 +7,25 @@ import { GraphQLPageQuery } from 'src/lib/types/graphql.global.entity';
 import { Author } from 'src/users/entities/author.entity';
 import { CreateLikeInput } from './dto/create-like.input';
 import { NotificationService } from 'src/notification/notification.service';
+import { dataParser } from 'src/lib/dataParser';
+import { RedisProvider } from 'src/db/redis/redis.provider';
 
 @Injectable()
 export class LikeService {
   constructor(private readonly drizzleProvider: DrizzleProvider,
-    private readonly notificationService: NotificationService) { }
+    private readonly notificationService: NotificationService,
+    private readonly redisProvider: RedisProvider
+
+  ) { }
 
   // like find all
   async findAll(sessionUser: Author, searchById: GraphQLPageQuery): Promise<Author[] | GraphQLError> {
     try {
+      const cKey = `likes:${searchById.id}:${searchById.offset}`;
+      let cacheLikes = await this.redisProvider.client.get(cKey);
+      if (cacheLikes) {
+        return dataParser(cacheLikes);
+      }
       if (sessionUser) {
         const likes = await this.drizzleProvider.db.select({
           id: UserSchema.id,
@@ -39,8 +49,8 @@ export class LikeService {
           .leftJoin(UserSchema, eq(LikeSchema.authorId, UserSchema.id))
           .limit(Number(searchById.limit) ?? 12)
           .offset(Number(searchById.offset) ?? 0)
-
-        return likes as Author[]
+        await this.redisProvider.client.set(cKey, JSON.stringify(likes), "EX", 60 * 5); // cache for 5 minutes
+        return likes as Author[];
 
       } else {
         const likes = await this.drizzleProvider.db.select({
@@ -56,11 +66,14 @@ export class LikeService {
           .limit(Number(searchById.limit) ?? 12)
           .offset(Number(searchById.offset) ?? 0)
 
-        return {
+        const NL = {
           ...likes,
           following: false,
           followed_by: false,
-        } as Author[]
+        } as Author[];
+
+        await this.redisProvider.client.set(cKey, JSON.stringify(NL), "EX", 60 * 5); // cache for 5 minutes
+        return NL;
       }
     } catch (error) {
       Logger.error(error)
@@ -111,7 +124,7 @@ export class LikeService {
       });
 
       // 
-      await this.notificationService.sendLikeOnPostNotification(sessionUser, input.id, input.recipientId,input.postUrl);
+      await this.notificationService.sendLikeOnPostNotification(sessionUser, input.id, input.recipientId, input.postUrl);
       return true;
 
     } catch (error) {

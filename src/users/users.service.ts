@@ -46,7 +46,7 @@ export class UsersService {
       if (data.length <= 0 || !data[0].id) {
         return [];
       }
-      await this.redisProvider.client.set(searchKey, JSON.stringify(data), 'EX', 30); // short TTL
+      await this.redisProvider.client.set(searchKey, JSON.stringify(data), 'EX', 60); // short TTL
       return data;
     } catch (error) {
       Logger.error(error)
@@ -56,7 +56,7 @@ export class UsersService {
 
   async findProfile(user: Author, username: string): Promise<Profile | GraphQLError> {
     try {
-      const profileKey = `profile:user:${user.id}`;
+      const profileKey = `profile:user:${username}:${user.id}`;
 
       let profile = await this.redisProvider.client.get(profileKey);
       if (profile) {
@@ -110,7 +110,7 @@ export class UsersService {
         })
       };
 
-      await this.redisProvider.client.set(profileKey, JSON.stringify(data[0]), 'EX', 300); // 5 min
+      await this.redisProvider.client.set(profileKey, JSON.stringify(data[0]), 'EX', 60); // 1 min
 
       return data[0] as Profile;
     } catch (error) {

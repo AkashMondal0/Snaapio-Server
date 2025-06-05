@@ -8,29 +8,39 @@ import { GqlAuthGuard } from 'src/auth/guard/Gql-auth.guard';
 import { UseGuards } from '@nestjs/common';
 import { GraphQLPageQuery } from 'src/lib/types/graphql.global.entity';
 import { Author } from 'src/users/entities/author.entity';
+import { Throttle } from '@nestjs/throttler';
+import { GqlThrottlerGuard } from 'src/auth/guard/GqlThrottler.Guard';
 
 @Resolver(() => Comment)
 export class CommentResolver {
   constructor(private readonly commentService: CommentService) { }
 
+  @Throttle({ default: { limit: 3, ttl: 1000 } })
+  @UseGuards(GqlThrottlerGuard)
   @UseGuards(GqlAuthGuard)
   @Mutation(() => Comment, { name: 'createComment' })
   createComment(@SessionUserGraphQl() user: Author, @Args('input') createCommentInput: CreateCommentInput) {
     return this.commentService.create(user, createCommentInput);
   }
 
+  @Throttle({ default: { limit: 3, ttl: 1000 } })
+  @UseGuards(GqlThrottlerGuard)
   @UseGuards(GqlAuthGuard)
   @Query(() => [Comment], { name: 'findAllComments' })
   findAll(@SessionUserGraphQl() user: Author, @Args('graphQLPageQuery') findCommentInput: GraphQLPageQuery) {
     return this.commentService.findAll(user, findCommentInput);
   }
 
+  @Throttle({ default: { limit: 3, ttl: 1000 } })
+  @UseGuards(GqlThrottlerGuard)
   @UseGuards(GqlAuthGuard)
   @Mutation(() => Comment, { name: 'updateComment' })
   updateComment(@SessionUserGraphQl() user: Author, @Args('input') updateCommentInput: UpdateCommentInput) {
     return this.commentService.update(user, updateCommentInput);
   }
 
+  @Throttle({ default: { limit: 3, ttl: 1000 } })
+  @UseGuards(GqlThrottlerGuard)
   @UseGuards(GqlAuthGuard)
   @Mutation(() => Comment, { name: 'destroyComment' })
   removeComment(@SessionUserGraphQl() user: Author, @Args('id', { type: () => String }) id: string) {

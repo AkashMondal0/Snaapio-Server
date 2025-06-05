@@ -7,12 +7,16 @@ import { UseGuards } from '@nestjs/common';
 import { SessionUserGraphQl } from 'src/decorator/session.decorator';
 import { Author } from 'src/users/entities/author.entity';
 import { GraphQLPageQuery } from 'src/lib/types/graphql.global.entity';
+import { Throttle } from '@nestjs/throttler';
+import { GqlThrottlerGuard } from 'src/auth/guard/GqlThrottler.Guard';
 
 
 @Resolver(() => Conversation)
 export class ConversationResolver {
   constructor(private readonly conversationService: ConversationService) { }
 
+  @Throttle({ default: { limit: 3, ttl: 1000 } })
+  @UseGuards(GqlThrottlerGuard)
   @UseGuards(GqlAuthGuard)
   @Mutation(() => Conversation, { name: 'createConversation' })
   createConversation(
@@ -21,6 +25,8 @@ export class ConversationResolver {
     return this.conversationService.create(user, createConversationInput);
   }
 
+  @Throttle({ default: { limit: 3, ttl: 1000 } })
+  @UseGuards(GqlThrottlerGuard)
   @UseGuards(GqlAuthGuard)
   @Query(() => [Conversation], { name: 'findAllConversation' })
   findAllConversation(@SessionUserGraphQl() user: Author,
@@ -28,6 +34,8 @@ export class ConversationResolver {
     return this.conversationService.findAll(user, graphQLPageQuery);
   }
 
+  @Throttle({ default: { limit: 3, ttl: 1000 } })
+  @UseGuards(GqlThrottlerGuard)
   @UseGuards(GqlAuthGuard)
   @Query(() => Conversation, { name: 'findOneConversation' })
   findOneConversation(

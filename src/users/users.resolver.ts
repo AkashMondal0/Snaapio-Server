@@ -10,25 +10,31 @@ import { UpdateUsersInput } from './dto/update-users.input';
 // import { GqlRolesGuard } from 'src/auth/guard/Gql.roles.guard';
 // import { Roles } from 'src/auth/SetMetadata';
 // import { Role } from 'src/lib/types';
-// import { Throttle } from '@nestjs/throttler';
-// import { GqlThrottlerGuard } from 'src/auth/guard/GqlThrottler.Guard';
 import { GraphQLLocationQuery, GraphQLPageQuery } from 'src/lib/types/graphql.global.entity';
+import { Throttle } from '@nestjs/throttler';
+import { GqlThrottlerGuard } from 'src/auth/guard/GqlThrottler.Guard';
 @Resolver(() => Users)
 export class UsersResolver {
   constructor(private readonly usersService: UsersService) { }
 
+  @Throttle({ default: { limit: 3, ttl: 1000 } })
+  @UseGuards(GqlThrottlerGuard)
   @UseGuards(GqlAuthGuard)
   @Query(() => Profile, { name: 'findUserProfile' })
   findUserProfile(@SessionUserGraphQl() user: Author, @Args("graphQLPageQuery") graphQLPageQuery: GraphQLPageQuery) {
     return this.usersService.findProfile(user, graphQLPageQuery.id);
   }
 
+  @Throttle({ default: { limit: 3, ttl: 1000 } })
+  @UseGuards(GqlThrottlerGuard)
   @UseGuards(GqlAuthGuard)
   @Query(() => [Author], { name: 'findUsersByKeyword' })
   findUsersByKeyword(@SessionUserGraphQl() user: Author, @Args("graphQLPageQuery") graphQLPageQuery: GraphQLPageQuery) {
     return this.usersService.findUsersByKeyword(graphQLPageQuery.id);
   }
 
+  @Throttle({ default: { limit: 3, ttl: 1000 } })
+  @UseGuards(GqlThrottlerGuard)
   @UseGuards(GqlAuthGuard)
   @Query(() => [Author], { name: 'findNearestUsers' })
   findNearestUsers(@SessionUserGraphQl() user: Author, @Args("graphQLPageQuery") graphQLPageQuery: GraphQLLocationQuery) {
@@ -42,8 +48,8 @@ export class UsersResolver {
   }
 
   // example of rate limiting
-  // @Throttle({ default: { limit: 1, ttl: 60000 } })
-  // @UseGuards(GqlThrottlerGuard)
+  @Throttle({ default: { limit: 3, ttl: 1000 } })
+  @UseGuards(GqlThrottlerGuard)
   @UseGuards(GqlAuthGuard)
   @Query(() => Author, { name: 'getSession' })
   getSessionApi(@SessionUserGraphQl() user: Author) {

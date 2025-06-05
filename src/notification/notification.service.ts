@@ -11,6 +11,7 @@ import Expo from 'expo-server-sdk';
 import expo from 'src/lib/expo';
 import { RedisProvider } from 'src/db/redis/redis.provider';
 import { Comment } from '../comment/entities/comment.entity';
+import { dataParser } from 'src/lib/dataParser';
 
 @Injectable()
 export class NotificationService {
@@ -69,6 +70,11 @@ export class NotificationService {
   }
 
   async findAll(user: Author, findAllNotificationInput: GraphQLPageQuery): Promise<Notification[] | any[]> {
+    const cKey = `notifications:${user.id}:${findAllNotificationInput.offset}`;
+    let cacheNotifications = await this.redisProvider.client.get(cKey);
+    if (cacheNotifications) {
+      return dataParser(cacheNotifications);
+    }
     await this.markAsSeen(user)
     const data = await this.drizzleProvider.db.select({
       id: NotificationSchema.id,
@@ -106,7 +112,7 @@ export class NotificationService {
     if (data.length <= 0 || !data) {
       return []
     }
-
+    await this.redisProvider.client.set(cKey, JSON.stringify(data), "EX", 60 * 5); // cache for 5 minutes
     return data
   }
 
@@ -240,7 +246,7 @@ export class NotificationService {
         authorId: user.id,
         recipientId: recipientId,
         postId: comment.postId,
-        commentId:comment.id,
+        commentId: comment.id,
         type: 'comment',
       }).returning();
 
@@ -262,7 +268,7 @@ export class NotificationService {
         // console.log(userNotificationId)
         this.ExpNotificationsSender(userNotificationId, {
           title: `${user.name} commented on your post`,
-          body: comment.content|| '...',
+          body: comment.content || '...',
           channelId: comment.postId,
           data: { url: `snaapio://post/${comment.postId}/comments` }
         })
@@ -271,5 +277,5 @@ export class NotificationService {
 
     return data[0] as Notification;
   }
-  async sendRemoveCommentOnPostNotification(user: Author, postId: string, recipientId: string, postUrl: string): Promise<void> {}
+  async sendRemoveCommentOnPostNotification(user: Author, postId: string, recipientId: string, postUrl: string): Promise<void> { }
 }
