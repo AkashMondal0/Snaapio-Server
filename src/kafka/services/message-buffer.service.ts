@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { MessagesSchema } from 'src/db/drizzle/drizzle.schema';
 import { DrizzleProvider } from 'src/db/drizzle/drizzle.provider';
 import { Message } from 'src/message/entities/message.entity';
-import { SQL, and, arrayContains, inArray, not, sql } from 'drizzle-orm';
+import { SQL, and, arrayContains, eq, inArray, not, or, sql } from 'drizzle-orm';
 import { Author } from 'src/users/entities/author.entity';
 import { CreateMessageInputSeen } from 'src/message/dto/create-message.input';
 
@@ -57,6 +57,7 @@ export class MessageBufferService {
       authorId: msg.authorId,
       fileUrl: msg.fileUrl ?? [],
       seenBy: [msg.authorId],
+      id: msg.id,
     }));
 
     try {
@@ -76,42 +77,58 @@ export class MessageBufferService {
     const batch = this.bufferSeenMessage.splice(0, this.bufferSeenMessage.length);
 
     try {
-
-      // Build an array of { id, userId } for each message/user combo
-      const seenUpdates: { id: string, userId: string }[] = [];
-      for (const { data: { conversationId: id }, author: { id: userId } } of batch) {
-        seenUpdates.push({ id, userId: userId.toString() });
+      // Extract unique { conversationId, userId }
+      const seenUpdates = new Map<string, Set<string>>();
+      for (const { data: { conversationId }, author: { id: userId } } of batch) {
+        const uid = String(userId);
+        if (!seenUpdates.has(conversationId)) {
+          seenUpdates.set(conversationId, new Set());
+        }
+        seenUpdates.get(conversationId)!.add(uid);
       }
 
-      if (seenUpdates.length === 0) {
-        return;
-      }
-
-      const sqlChunks: SQL[] = [];
+      // Prepare SQL CASE WHEN expression
+      const sqlChunks: SQL[] = [sql`(CASE`];
       const ids: string[] = [];
-      sqlChunks.push(sql`(case`);
-      for (const item of seenUpdates) {
-        sqlChunks.push(
-          sql`when ${MessagesSchema.conversationId} = ${item.id} then array_append(${MessagesSchema.seenBy}, ${item.userId})`
-        );
-        ids.push(item.id);
+
+      for (const [convId, userIds] of seenUpdates.entries()) {
+        // One CASE per conversation ID
+        for (const uid of userIds) {
+          sqlChunks.push(
+            sql`WHEN ${MessagesSchema.conversationId} = ${convId} 
+               THEN array_append(${MessagesSchema.seenBy}, ${uid})`
+          );
+        }
+        ids.push(convId);
       }
-      sqlChunks.push(sql`end)`);
+
+      sqlChunks.push(sql`END)`);
       const finalSql: SQL = sql.join(sqlChunks, sql.raw(' '));
 
-      this.drizzleProvider.db
+      // Execute single UPDATE for all conversations
+      await this.drizzleProvider.db
         .update(MessagesSchema)
         .set({ seenBy: finalSql })
         .where(
           and(
             inArray(MessagesSchema.conversationId, ids),
-            ...seenUpdates.map(item =>
-              not(arrayContains(MessagesSchema.seenBy, [item.userId]))
+            // Exclude rows where userId already exists in seenBy
+            or(
+              ...[...seenUpdates.entries()].map(([convId, userIds]) =>
+                and(
+                  eq(MessagesSchema.conversationId, convId),
+                  ...[...userIds].map(uid =>
+                    not(arrayContains(MessagesSchema.seenBy, [uid]))
+                  )
+                )
+              )
             )
           )
-        );
+        )
+        .execute();
+
     } catch (err) {
-      console.error('[SeenMessage] DB Update Error:', err);
+      console.error("[SeenMessage] DB Update Error:", err);
       this.bufferSeenMessage.unshift(...batch);
     } finally {
       this.isSeenMessageFlushing = false;

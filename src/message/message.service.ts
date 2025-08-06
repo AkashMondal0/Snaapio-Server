@@ -12,6 +12,8 @@ import { decryptForUser, encryptForParticipants } from 'src/lib/crypto/encrypt.d
 import { RedisProvider } from 'src/db/redis/redis.provider';
 import { GraphQLError } from 'graphql';
 import { NotificationService } from 'src/notification/notification.service';
+import { KafkaService } from 'src/kafka/kafka.producer';
+import { generateRandomString } from 'src/lib/id-generate';
 import { dataParser } from 'src/lib/dataParser';
 
 @Injectable()
@@ -20,8 +22,8 @@ export class MessageService {
     private readonly drizzleProvider: DrizzleProvider,
     private readonly eventProvider: EventGateway,
     private readonly notificationService: NotificationService,
-    private readonly redisProvider: RedisProvider
-
+    private readonly redisProvider: RedisProvider,
+    private readonly kafkaProvider: KafkaService
   ) { }
   async findAll(user: Author, graphQLPageQuery: GraphQLPageQuery): Promise<Message[] | GraphQLError> {
     if (!graphQLPageQuery?.privateKey) {
@@ -80,62 +82,48 @@ export class MessageService {
       }
     });
 
-    await this.redisProvider.client.set(cacheKey, JSON.stringify(nData.reverse()), 'EX', 60 * 60 * 24 * 7); // 7 days
+    // await this.redisProvider.client.set(cacheKey, JSON.stringify(nData.reverse()), 'EX', 60 * 60 * 24 * 7); // 7 days
     return nData.reverse();
   }
+  
 
   async create(user: Author, createMessageInput: CreateMessageInput): Promise<Message> {
-
     const encryptedMessage = encryptForParticipants(
       Buffer.from(createMessageInput.content, 'utf-8'),
       createMessageInput.membersPublicKey,
     );
 
-    const data = await this.drizzleProvider.db.insert(MessagesSchema)
-      .values({
-        content: encryptedMessage.encryptedData,
-        e_key: encryptedMessage.encryptedKeys,
-        iv: encryptedMessage.iv,
-        conversationId: createMessageInput.conversationId,
-        authorId: createMessageInput.authorId,
-        fileUrl: createMessageInput.fileUrl ?? [],
-        seenBy: [user.id]
-      })
-      .returning();
-
-    const rawData: Message = { ...data[0], content: createMessageInput.content };
-
-    const recipientId = createMessageInput.members.filter((i) => i !== user.id);
-    const ids = await this.eventProvider.findUserBySocketId([recipientId[0]]);
-
-    if (ids && ids.length > 0) {
-      this.eventProvider.publishMessage(event_name.conversation.message, { ...rawData, members: createMessageInput.members })
-    } else {
-      const userNotificationId = await this.redisProvider.client.get(`notification:${recipientId}`)
-      if (userNotificationId) {
-        // console.log(userNotificationId)
-        this.notificationService.ExpNotificationsSender(userNotificationId, {
-          title: `${user.name}`,
-          body: rawData.content,
-          channelId: rawData.conversationId,
-          data: { url: `snaapio://message/${rawData.conversationId}` }
-        })
-      }
+    const _message: Message = {
+      content: createMessageInput.content,
+      encryptedMessage: encryptedMessage.encryptedData,
+      members_e_key: encryptedMessage.encryptedKeys as any,
+      iv: encryptedMessage.iv,
+      conversationId: createMessageInput.conversationId,
+      authorId: createMessageInput.authorId,
+      fileUrl: createMessageInput.fileUrl ?? [],
+      seenBy: [user.id],
+      id: generateRandomString({ length: 16, type: "lowernumeric" }),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        profilePicture: user.profilePicture,
+        name: user.name,
+      },
+      deleted: false,
+      members: createMessageInput.members,
     }
-    return rawData;
+
+    // Save message to the database
+    await this.kafkaProvider.sendTopicMessage('message-topic', JSON.stringify(_message));
+    return _message;
   }
 
-  async seenMessages(user: Author, conversationId: CreateMessageInputSeen): Promise<boolean> {
-    await this.drizzleProvider.db.update(MessagesSchema)
-      .set({
-        seenBy: sql`array_append(${MessagesSchema.seenBy}, ${user.id})`
-      })
-      .where(and(
-        eq(MessagesSchema.conversationId, conversationId.conversationId),
-        not(arrayContains(MessagesSchema.seenBy, [user.id]))
-      ))
-    this.eventProvider.publishMessage(event_name.conversation.seen, { ...conversationId })
-    return true
+  async seenMessages(user: Author, payload: CreateMessageInputSeen): Promise<boolean> {
+    await this.kafkaProvider.sendTopicMessage('message-seen-topic', JSON.stringify({ author: user, data: payload }));
+    return true;
   }
 
   async typingStatus(typingStatus: TypingStatusInput): Promise<string> {

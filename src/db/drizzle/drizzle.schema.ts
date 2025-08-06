@@ -267,7 +267,7 @@ export const commentReplySchema = pgTable('comment_replies', {
 }));
 // chat
 export const MessagesSchema = pgTable('messages', {
-    id: uuid('id').defaultRandom().primaryKey(),
+    id: varchar('id').primaryKey(),
     content: text('content').notNull(),
     e_key: jsonb('e_key').$type<EncryptedKeys>().notNull(),
     iv: text('iv').notNull(),
