@@ -6,9 +6,10 @@ import { DrizzleModule } from 'src/db/drizzle/drizzle.module';
 import { UsersService } from 'src/users/users.service';
 import { FriendshipService } from 'src/friendship/friendship.service';
 import { RedisModule } from 'src/db/redis/redis.module';
+import { KafkaModule } from 'src/kafka/kafka.module';
 
 @Module({
-  imports: [DrizzleModule, RedisModule],
+  imports: [DrizzleModule, RedisModule, KafkaModule],
   providers: [PostResolver, PostService, UsersService, FriendshipService],
   controllers: [PostController],
   exports: [PostService],

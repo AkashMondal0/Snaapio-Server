@@ -2,12 +2,12 @@ import { Author } from "src/users/entities/author.entity";
 
 export class Image { }
 export type ReqFile = {
-	fieldname: string,
+	fieldname?: string,
 	originalname: string,
-	encoding: string,
-	mimetype: string,
+	encoding?: string,
+	mimetype?: string,
 	buffer: Buffer,
-	size: number
+	size?: number
 }
 
 export type shortUploadType = {

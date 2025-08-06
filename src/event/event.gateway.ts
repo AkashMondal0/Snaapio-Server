@@ -97,6 +97,14 @@ export class EventGateway implements OnModuleInit {
         }
     }
 
+    async sendMessageToSocketUser(socketId: string[], data: any) {
+        this.server.to(socketId).emit(event_name.conversation.message, data);
+    }
+
+    async sendSeenMessageToSocketUser(socketId: string[], data: any) {
+        this.server.to(socketId).emit(event_name.conversation.seen, data);
+    }
+
     async handleConnection(client: Socket) {
         const userId = this.extractUserIdAndName(client)?.userId;
         if (userId) await this.client.hset("skylight:clients", userId, client.id);

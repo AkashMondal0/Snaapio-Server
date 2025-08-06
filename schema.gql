@@ -147,7 +147,9 @@ type Message {
   conversationId: String!
   authorId: String
   content: String
+  encryptedMessage: String
   members_e_key: JSONObject
+  e_key: JSONObject
   iv: String
   user: Author
   fileUrl: [AssetUrls!]
@@ -294,7 +296,7 @@ input TypingStatusInput {
 }
 
 type Mutation {
-  createPost(createPostInput: CreatePostInput!): Post!
+  createPost(createPostInput: CreatePostInput!): Boolean!
   updateUserProfile(UpdateUsersInput: UpdateUsersInput!): Author!
   createComment(input: CreateCommentInput!): Comment!
   updateComment(input: UpdateCommentInput!): Comment!

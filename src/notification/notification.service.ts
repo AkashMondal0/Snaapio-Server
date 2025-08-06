@@ -21,7 +21,7 @@ export class NotificationService {
     private readonly redisProvider: RedisProvider
   ) { }
 
-  async ExpNotificationsSender(token: string, data: {
+  async ExpNotificationsSender(recipientId: string, data: {
     title: string,
     body: string,
     channelId?: string,
@@ -32,14 +32,15 @@ export class NotificationService {
       image: string,
     },
   }): Promise<void> {
+     const userNotificationId = await this.redisProvider.client.get(`notification:${recipientId}`) // find user notification id
     // const { pushToken, title, body, imageUrl } = request.body as any;
     // Validate push token
-    if (!Expo.isExpoPushToken(token)) {
+    if (!Expo.isExpoPushToken(userNotificationId)) {
       return;// response.send(`Invalid Expo push token`);
     }
 
     const message = {
-      to: token,
+      to: userNotificationId,
       sound: 'default',
       title: data.title,
       body: data.body,

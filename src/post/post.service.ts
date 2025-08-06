@@ -11,11 +11,14 @@ import { Post } from './entities/post.entity';
 import { shortUploadType } from 'src/image/entities/image.entity';
 import { RedisProvider } from 'src/db/redis/redis.provider';
 import { dataParser } from 'src/lib/dataParser';
+import { KafkaService } from 'src/kafka/kafka.producer';
 
 @Injectable()
 export class PostService {
-  constructor(private readonly drizzleProvider: DrizzleProvider,
-    private readonly redisProvider: RedisProvider
+  constructor(
+    private readonly drizzleProvider: DrizzleProvider,
+    private readonly redisProvider: RedisProvider,
+    private readonly kafkaProvider: KafkaService
   ) { }
 
   async feed(loggedUser: Author, limitAndOffset: GraphQLPageQuery): Promise<Post[]> {
@@ -314,23 +317,20 @@ export class PostService {
   }
 
   // createPost
-  async createPost(loggedUser: Author, body: CreatePostInput): Promise<Post | GraphQLError> {
+  async createPost(loggedUser: Author, body: CreatePostInput): Promise<Boolean | GraphQLError> {
     try {
       if (loggedUser.id !== body.authorId) {
         throw new GraphQLError('You are not authorized to perform this action')
       }
-      const data = await this.drizzleProvider.db.insert(PostSchema).values({
+
+      const data = {
         content: body.content ?? "",
         fileUrl: body.fileUrl,
         authorId: loggedUser.id,
         status: body.status
-      }).returning()
-
-      if (!data[0]) {
-        throw new GraphQLError('Post not created')
       }
-
-      return data[0] as Post
+      await this.kafkaProvider.sendTopicMessage('post-topic', JSON.stringify(data));
+      return true;
     } catch (error) {
       Logger.error(`Post not created:`, error)
       throw new GraphQLError(error)

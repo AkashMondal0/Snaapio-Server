@@ -52,7 +52,7 @@ export class PostResolver {
   @Throttle({ default: { limit: 3, ttl: 1000 } })
   @UseGuards(GqlThrottlerGuard)
   @UseGuards(GqlAuthGuard)
-  @Mutation(() => Post, { name: 'createPost' })
+  @Mutation(() => Boolean, { name: 'createPost' })
   createPost(@SessionUserGraphQl() user: Author, @Args('createPostInput') createPostInput: CreatePostInput) {
     return this.postService.createPost(user, createPostInput);
   }

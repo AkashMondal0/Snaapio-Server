@@ -17,6 +17,7 @@
     "start:prod": "node dist/src/main.js",
     "db:migrate": "npx tsx migration.ts",
     "db:generate": "npx drizzle-kit generate",
+    "kafka": "docker compose -f docker-compose-kafka.yaml up -d",
     "db:migrate-normal": "npx drizzle-kit migrate",
     "db:push": "npx drizzle-kit push",
     "docker:build": "docker build -t akashmondal0/snaapio-backend:1.5 .",

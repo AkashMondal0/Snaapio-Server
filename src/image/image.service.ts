@@ -5,32 +5,36 @@ import { RedisProvider } from 'src/db/redis/redis.provider';
 import sharp from 'sharp';
 import { generateRandomString } from 'src/lib/id-generate';
 import { AssetUrls } from 'src/post/entities/post.entity';
-
-const imageVariants = [
-  { aspectRatio: "blur_square", width: 150, height: 150, quality: 40, blur: true },
-  { aspectRatio: "square", width: 500, height: 500, quality: 70, blur: false },
-  { aspectRatio: "square_sm", width: 150, height: 150, quality: 40, blur: false },
-  { aspectRatio: "blur_original", width: 400, height: 600, quality: 30, blur: true },
-  { aspectRatio: "original", width: 1080, height: 1350, quality: 70, blur: false },
-  { aspectRatio: "original_sm", width: 400, height: 600, quality: 50, blur: false },
-];
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import { imageVariants } from './imgVariants';
+import { writeJsonToJobFolder } from 'src/lib/file-system';
 
 @Injectable()
 export class ImageService {
   constructor(
     // private readonly drizzleProvider: DrizzleProvider,
     private readonly redisProvider: RedisProvider,
+    @InjectQueue('ImageProcessQueue') private readonly workQueue: Queue,
   ) { }
   expire: number = 7 * 24 * 60 * 60;
 
   // function depend -> compressedImages
   async processAndUploadImage(
     file: ReqFile,
-    variant: { width: number; height: number, quality: number, aspectRatio: string, blur: boolean, },
+    variant: { width: number; height: number; quality: number; aspectRatio: string; blur: boolean },
     userId: string
   ): Promise<any> {
     try {
-      let image = sharp(file.buffer).resize({
+      if (!file || !file.buffer) {
+        Logger.error(`No buffer found for file: ${file?.originalname}`);
+        return;
+      }
+
+      // Reconstruct proper Buffer
+      const buffer = Buffer.from(file.buffer);
+
+      let image = sharp(buffer).resize({
         width: variant.width,
         height: variant.height,
         fit: "cover",
@@ -43,7 +47,8 @@ export class ImageService {
       }
 
       const compressedImage = await image.toBuffer();
-      const path = `/${variant.aspectRatio}/${file.originalname}`
+      const path = `/${variant.aspectRatio}/${file.originalname}`;
+
       const { error } = await supabase.storage
         .from("snaapio-production")
         .upload(path, compressedImage, {
@@ -55,49 +60,56 @@ export class ImageService {
       if (error) {
         if (error?.message === "The resource already exists") {
           return { [variant.aspectRatio]: path };
-        };
+        }
+        Logger.warn(`Upload error for ${path}: ${error.message}`);
+        return;
       }
 
       return { [variant.aspectRatio]: path };
     } catch (error) {
-      Logger.error(`Processing error for ${file.originalname}:`, error);
-      return
+      Logger.error(`Processing error for ${file?.originalname ?? 'unknown file'}:`, error);
+      return;
     }
   }
 
   async compressedImages(files: ReqFile[], userId: string): Promise<AssetUrls[]> {
-    let imgArr: AssetUrls[] = [];
+    const imgArr: AssetUrls[] = [];
+    const jobId = generateRandomString({});
     try {
-      const uploadPromises = files.map(async (file) => {
-        // get metadata
+
+      for (const file of files) {
+        const id = generateRandomString({});
+
+        writeJsonToJobFolder(jobId, file.originalname, file.buffer)
         const metadata = await sharp(file.buffer).metadata();
 
-        // 
-        const urls = await Promise.all(
-          imageVariants.map((variant) =>
-            this.processAndUploadImage(file, variant, userId) // Added return statement
-          )
-        );
-        // 
+        const placeholderPaths = imageVariants.map(variant => {
+          return { [variant.aspectRatio]: `/${variant.aspectRatio}/${file.originalname}` };
+        });
+
+        // Push immediate response structure
         imgArr.push({
-          ...Object.assign({}, ...urls),
+          ...Object.assign({}, ...placeholderPaths),
           width: metadata.width,
           height: metadata.height,
           type: "image",
-          id: generateRandomString({})
+          id,
         });
-      });
 
-      // Wait for all uploads to finish
-      await Promise.all(uploadPromises);
+      }
+      // future 
+      await this.workQueue.add('image-compress', { userId, jobId, imgArr },
+        {
+          removeOnComplete: true,  // okay
+          removeOnFail: true,     // keep failed for debugging
+        });
 
-      return imgArr; // Return the collected image URLs
+      return imgArr;
     } catch (error) {
-      Logger.error("Image compression failed:", error);
+      Logger.error("Image compression init failed:", error);
       throw new HttpException('Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
-
   // new
   async uploadImage(files: ReqFile[], userId: string) {
     try {
