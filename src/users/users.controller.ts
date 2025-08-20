@@ -1,7 +1,7 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, Get, Query, Post, Body, Put, Param, Delete, HttpStatus, Res, Req, HttpException } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { KafkaService } from 'src/kafka/kafka.producer';
+// import { KafkaService } from 'src/kafka/kafka.producer';
 
 
 @Controller({
@@ -10,7 +10,7 @@ import { KafkaService } from 'src/kafka/kafka.producer';
 })
 export class UsersController {
   constructor(private usersService: UsersService,
-    private kafkaService: KafkaService
+    // private kafkaService: KafkaService
   ) { }
 
   @Get(':user')
@@ -28,16 +28,16 @@ export class UsersController {
 
   }
 
-  @Get('create')
-  async create(@Res() res: FastifyReply): Promise<any> {
-    try {
-      await this.kafkaService.sendTopicMessage('test-topic', 'create a user');
-      return res.send("create a user");
-    } catch (error) {
-      console.error(error);
-      throw new HttpException('Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-  }
+  // @Get('create')
+  // async create(@Res() res: FastifyReply): Promise<any> {
+  //   try {
+  //     await this.kafkaService.sendTopicMessage('test-topic', 'create a user');
+  //     return res.send("create a user");
+  //   } catch (error) {
+  //     console.error(error);
+  //     throw new HttpException('Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
+  //   }
+  // }
 
   // @Get('nearest')
   // async findNearByUsers(

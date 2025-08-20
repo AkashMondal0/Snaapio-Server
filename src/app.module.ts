@@ -28,7 +28,7 @@ import { PaymentModule } from './payment/payment.module';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { FileModule } from './file/file.module';
 import { QueueModule } from './queue/queue.module';
-import { KafkaModule } from './kafka/kafka.module';
+// import { KafkaModule } from './kafka/kafka.module';
 
 @Module({
   imports: [
@@ -72,7 +72,7 @@ import { KafkaModule } from './kafka/kafka.module';
     AiModule,
     PaymentModule,
     FileModule,
-    KafkaModule
+    // KafkaModule
   ],
   controllers: [AppController],
   providers: [AppService],

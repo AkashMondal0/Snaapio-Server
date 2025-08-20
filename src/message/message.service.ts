@@ -12,9 +12,11 @@ import { decryptForUser, encryptForParticipants } from 'src/lib/crypto/encrypt.d
 import { RedisProvider } from 'src/db/redis/redis.provider';
 import { GraphQLError } from 'graphql';
 import { NotificationService } from 'src/notification/notification.service';
-import { KafkaService } from 'src/kafka/kafka.producer';
+// import { KafkaService } from 'src/kafka/kafka.producer';
 import { generateRandomString } from 'src/lib/id-generate';
 import { dataParser } from 'src/lib/dataParser';
+import { MessageProcessorService } from 'src/kafka/services/message-processor.service';
+import { MessageBufferService } from 'src/kafka/services/message-buffer.service';
 
 @Injectable()
 export class MessageService {
@@ -23,7 +25,9 @@ export class MessageService {
     private readonly eventProvider: EventGateway,
     private readonly notificationService: NotificationService,
     private readonly redisProvider: RedisProvider,
-    private readonly kafkaProvider: KafkaService
+    private readonly messageProcessorService: MessageProcessorService,
+    private readonly messageBufferService: MessageBufferService,
+    // private readonly kafkaProvider: KafkaService
   ) { }
   async findAll(user: Author, graphQLPageQuery: GraphQLPageQuery): Promise<Message[] | GraphQLError> {
     if (!graphQLPageQuery?.privateKey) {
@@ -85,7 +89,6 @@ export class MessageService {
     // await this.redisProvider.client.set(cacheKey, JSON.stringify(nData.reverse()), 'EX', 60 * 60 * 24 * 7); // 7 days
     return nData.reverse();
   }
-  
 
   async create(user: Author, createMessageInput: CreateMessageInput): Promise<Message> {
     const encryptedMessage = encryptForParticipants(
@@ -117,12 +120,20 @@ export class MessageService {
     }
 
     // Save message to the database
-    await this.kafkaProvider.sendTopicMessage('message-topic', JSON.stringify(_message));
+    // await this.kafkaProvider.sendTopicMessage('message-topic', JSON.stringify(_message));
+    await this.messageBufferService.add(_message);
+    await this.messageProcessorService.messageProcess(_message);
     return _message;
   }
 
   async seenMessages(user: Author, payload: CreateMessageInputSeen): Promise<boolean> {
-    await this.kafkaProvider.sendTopicMessage('message-seen-topic', JSON.stringify({ author: user, data: payload }));
+    const data = {
+      author: user,
+      data: payload
+    }
+    // await this.kafkaProvider.sendTopicMessage('message-seen-topic', JSON.stringify({ author: user, data: payload }));
+    await this.messageProcessorService.messageSeenProcess(data);      // Real-time or push
+    await this.messageBufferService.addSeenMessage(data);
     return true;
   }
 

@@ -11,14 +11,17 @@ import { Post } from './entities/post.entity';
 import { shortUploadType } from 'src/image/entities/image.entity';
 import { RedisProvider } from 'src/db/redis/redis.provider';
 import { dataParser } from 'src/lib/dataParser';
-import { KafkaService } from 'src/kafka/kafka.producer';
+import { PostBufferService } from 'src/kafka/services/post-buffer.service';
+// import { KafkaService } from 'src/kafka/kafka.producer';
 
 @Injectable()
 export class PostService {
   constructor(
     private readonly drizzleProvider: DrizzleProvider,
     private readonly redisProvider: RedisProvider,
-    private readonly kafkaProvider: KafkaService
+    private readonly postBufferService: PostBufferService,
+
+    // private readonly kafkaProvider: KafkaService
   ) { }
 
   async feed(loggedUser: Author, limitAndOffset: GraphQLPageQuery): Promise<Post[]> {
@@ -323,13 +326,17 @@ export class PostService {
         throw new GraphQLError('You are not authorized to perform this action')
       }
 
-      const data = {
+      const data: CreatePostInput = {
         content: body.content ?? "",
         fileUrl: body.fileUrl,
         authorId: loggedUser.id,
-        status: body.status
+        status: body.status,
+        title: '',
+        tags: [],
+        locations: []
       }
-      await this.kafkaProvider.sendTopicMessage('post-topic', JSON.stringify(data));
+      this.postBufferService.add(data)
+      // await this.kafkaProvider.sendTopicMessage('post-topic', JSON.stringify(data));
       return true;
     } catch (error) {
       Logger.error(`Post not created:`, error)

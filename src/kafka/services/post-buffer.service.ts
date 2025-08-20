@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { DrizzleProvider } from 'src/db/drizzle/drizzle.provider';
 // import { SQL, and, arrayContains, inArray, not, sql } from 'drizzle-orm';
 // import { Author } from 'src/users/entities/author.entity';
-import { Post } from 'src/post/entities/post.entity';
+// import { Post } from 'src/post/entities/post.entity';
 import { PostSchema } from 'src/db/drizzle/drizzle.schema';
 import { CreatePostInput } from 'src/post/dto/create-post.input';
 

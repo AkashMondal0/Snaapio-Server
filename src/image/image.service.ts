@@ -13,7 +13,6 @@ import { writeJsonToJobFolder } from 'src/lib/file-system';
 @Injectable()
 export class ImageService {
   constructor(
-    // private readonly drizzleProvider: DrizzleProvider,
     private readonly redisProvider: RedisProvider,
     @InjectQueue('ImageProcessQueue') private readonly workQueue: Queue,
   ) { }
@@ -32,7 +31,7 @@ export class ImageService {
       }
 
       // Reconstruct proper Buffer
-      const buffer = Buffer.from(file.buffer);
+      const buffer = Buffer.from(file.buffer as any);
 
       let image = sharp(buffer).resize({
         width: variant.width,
