@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { count, eq, exists, like, or, and, sql, cosineDistance } from 'drizzle-orm';
+import { count, eq, exists, like, or, and, sql } from 'drizzle-orm';
 import { GraphQLError } from 'graphql';
 import { DrizzleProvider } from 'src/db/drizzle/drizzle.provider';
 import { AccountSchema, FriendshipSchema, PostSchema, UserSchema } from 'src/db/drizzle/drizzle.schema';
@@ -110,7 +110,7 @@ export class UsersService {
         })
       };
 
-      await this.redisProvider.client.set(profileKey, JSON.stringify(data[0]), 'EX', 60); // 1 min
+      await this.redisProvider.client.set(profileKey, JSON.stringify(data[0]), 'EX', 300); // 5 min
 
       return data[0] as Profile;
     } catch (error) {
@@ -124,6 +124,13 @@ export class UsersService {
   // for meta data
   async findUserPublicData(username: string): Promise<Profile | null> {
     try {
+      const profileKey = `profile:user:${username}:*`;
+
+      let profile = await this.redisProvider.client.get(profileKey);
+      if (profile) {
+        return dataParser(profile) as Profile;
+      }
+
       const data = await this.drizzleProvider.db.select({
         username: UserSchema.username,
         name: UserSchema.name,
@@ -150,13 +157,17 @@ export class UsersService {
         count: count()
       }).from(FriendshipSchema).where(eq(FriendshipSchema.authorUserId, data[0].id))
 
-      return {
+      const profileData = {
         ...data[0],
         followerCount: followerCount[0].count,
         followingCount: followingCount[0].count
-      }
+      };
+
+      await this.redisProvider.client.set(profileKey, JSON.stringify(profileData), 'EX', 300);
+
+      return profileData;
     } catch (error) {
-      return null
+      return null;
     }
   }
 
