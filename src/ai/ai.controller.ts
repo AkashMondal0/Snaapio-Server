@@ -34,12 +34,12 @@ export class AiController {
     return await this.aiService.modelGemini2FlashImageGeneration(session?.id, id, prompt);
   }
 
-  @Post('/create')
-  @UseGuards(MyAuthGuard)
-  async createChatSession(
-    @RestApiSessionUser() session: Author,
-    @Body('data') data: any,
-  ) {
-    return await this.aiService.createAiChatSession(session, data);
-  }
+  // @Post('/create')
+  // @UseGuards(MyAuthGuard)
+  // async createChatSession(
+  //   @RestApiSessionUser() session: Author,
+  //   @Body('data') data: any,
+  // ) {
+  //   return await this.aiService.createAiChatSession(session, data);
+  // }
 }

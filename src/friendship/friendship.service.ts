@@ -4,13 +4,18 @@ import { CreateFriendshipInput } from './dto/create-friendship.input';
 import { GraphQLError } from 'graphql';
 import { DestroyFriendship } from './dto/delete-friendship.input';
 import { and, eq, desc, exists, } from 'drizzle-orm';
-import { FriendshipSchema,UserSchema } from 'src/db/drizzle/drizzle.schema';
+import { FriendshipSchema, UserSchema } from 'src/db/drizzle/drizzle.schema';
 import { GraphQLPageQuery } from 'src/lib/types/graphql.global.entity';
 import { Author } from 'src/users/entities/author.entity';
+import { RedisProvider } from 'src/db/redis/redis.provider';
+import { Profile } from 'src/users/entities/profile.entity';
+import { dataParser } from 'src/lib/dataParser';
 
 @Injectable()
 export class FriendshipService {
-  constructor(private readonly drizzleProvider: DrizzleProvider) { }
+  constructor(private readonly drizzleProvider: DrizzleProvider,
+    private readonly redisProvider: RedisProvider,
+  ) { }
 
   async createFriendship(createFollowInput: CreateFriendshipInput): Promise<{ friendShip: boolean } | GraphQLError> {
     try {
@@ -36,6 +41,18 @@ export class FriendshipService {
         followingUserId: createFollowInput.followingUserId,
       })
 
+      const profileKey = `profile:user:${createFollowInput.followingUsername}:${createFollowInput.authorUserId}`;
+
+      let profile = await this.redisProvider.client.get(profileKey);
+      const parsedProfile = dataParser(profile) as Profile;
+
+      if (parsedProfile) {
+        parsedProfile.followed_by = true;
+        parsedProfile.friendship = { ...(typeof parsedProfile.friendship === 'object' && parsedProfile.friendship !== null ? parsedProfile.friendship : {}), following: true };
+        parsedProfile.followerCount = (typeof parsedProfile.followerCount === 'number' ? parsedProfile.followerCount : 0) + 1;
+        await this.redisProvider.client.set(profileKey, JSON.stringify(parsedProfile), 'EX', 300);
+      }
+
       return {
         friendShip: true,
       };
@@ -54,6 +71,18 @@ export class FriendshipService {
         eq(FriendshipSchema.followingUsername, destroyFriendship.followingUsername),
         eq(FriendshipSchema.authorUsername, destroyFriendship.authorUsername),
       ))
+
+      const profileKey = `profile:user:${destroyFriendship.followingUsername}:${destroyFriendship.authorUserId}`;
+
+      let profile = await this.redisProvider.client.get(profileKey);
+      const parsedProfile = dataParser(profile) as Profile;
+
+      if (parsedProfile) {
+        parsedProfile.following = false;
+        parsedProfile.friendship = { ...(typeof parsedProfile.friendship === 'object' && parsedProfile.friendship !== null ? parsedProfile.friendship : {}), following: false };
+        parsedProfile.followerCount = (typeof parsedProfile.followerCount === 'number' && parsedProfile.followerCount > 0 ? parsedProfile.followerCount - 1 : 0);
+        await this.redisProvider.client.set(profileKey, JSON.stringify(parsedProfile), 'EX', 300);
+      }
 
       return {
         friendShip: false,

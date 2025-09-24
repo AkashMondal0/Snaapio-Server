@@ -7,6 +7,8 @@ import { UseGuards } from '@nestjs/common';
 import { Author } from 'src/users/entities/author.entity';
 import { SessionUserGraphQl } from 'src/decorator/session.decorator';
 import { GraphQLPageQuery } from 'src/lib/types/graphql.global.entity';
+import { Throttle } from '@nestjs/throttler';
+import { GqlThrottlerGuard } from 'src/auth/guard/GqlThrottler.Guard';
 
 @Resolver(() => Notification)
 export class NotificationResolver {
@@ -18,18 +20,24 @@ export class NotificationResolver {
   //   return this.notificationService.create(user, createNotificationInput);
   // }
 
+  @Throttle({ default: { limit: 3, ttl: 1000 } })
+  @UseGuards(GqlThrottlerGuard)
   @UseGuards(GqlAuthGuard)
   @Query(() => [Notification], { name: 'findAllNotifications' })
   findAll(@SessionUserGraphQl() user: Author, @Args('graphQLPageQuery') findAllNotificationInput: GraphQLPageQuery) {
     return this.notificationService.findAll(user, findAllNotificationInput);
   }
 
+  @Throttle({ default: { limit: 3, ttl: 1000 } })
+  @UseGuards(GqlThrottlerGuard)
   @UseGuards(GqlAuthGuard)
   @Query(() => UnReadNotification, { name: 'unseenNotifications' })
   unseenNotifications(@SessionUserGraphQl() user: Author) {
     return this.notificationService.UnseenNotifications(user);
   }
 
+  @Throttle({ default: { limit: 3, ttl: 1000 } })
+  @UseGuards(GqlThrottlerGuard)
   @UseGuards(GqlAuthGuard)
   @Query(() => Number, { name: 'unseenMessageNotifications' })
   unseenMessageNotifications(@SessionUserGraphQl() user: Author) {
@@ -42,6 +50,8 @@ export class NotificationResolver {
   //   return this.notificationService.remove(user, destroyNotificationInput);
   // }
 
+  @Throttle({ default: { limit: 3, ttl: 1000 } })
+  @UseGuards(GqlThrottlerGuard)
   @UseGuards(GqlAuthGuard)
   @Mutation(() => Boolean, { name: 'markAsSeenNotification' })
   markAsSeenNotification(@SessionUserGraphQl() user: Author) {

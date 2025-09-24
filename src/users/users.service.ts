@@ -1,22 +1,32 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { count, eq, exists, like, or, and, sql, cosineDistance } from 'drizzle-orm';
+import { count, eq, exists, like, or, and, sql } from 'drizzle-orm';
 import { GraphQLError } from 'graphql';
 import { DrizzleProvider } from 'src/db/drizzle/drizzle.provider';
 import { AccountSchema, FriendshipSchema, PostSchema, UserSchema } from 'src/db/drizzle/drizzle.schema';
 import { Author } from './entities/author.entity';
 import { Profile } from './entities/profile.entity';
 import { UpdateUsersInput } from './dto/update-users.input';
+import { RedisProvider } from 'src/db/redis/redis.provider';
+import { dataParser } from 'src/lib/dataParser';
 
 @Injectable()
 export class UsersService {
   constructor(
-    private readonly drizzleProvider: DrizzleProvider
+    private readonly drizzleProvider: DrizzleProvider,
+    private readonly redisProvider: RedisProvider
   ) { }
 
   async findUsersByKeyword(userKeyword: string): Promise<Author[] | []> {
     try {
       const keywordForUsername = userKeyword.toLowerCase().trim();
       const keywordForName = userKeyword.trim();
+      const searchKey = `search:users:${keywordForUsername + keywordForName}`;
+
+      let results = await this.redisProvider.client.get(searchKey);
+      if (results) {
+        return dataParser(results);
+      }
+
       const data = await this.drizzleProvider.db.select({
         id: UserSchema.id,
         username: UserSchema.username,
@@ -36,7 +46,7 @@ export class UsersService {
       if (data.length <= 0 || !data[0].id) {
         return [];
       }
-
+      await this.redisProvider.client.set(searchKey, JSON.stringify(data), 'EX', 60); // short TTL
       return data;
     } catch (error) {
       Logger.error(error)
@@ -46,6 +56,13 @@ export class UsersService {
 
   async findProfile(user: Author, username: string): Promise<Profile | GraphQLError> {
     try {
+      const profileKey = `profile:user:${username}:${user.id}`;
+
+      let profile = await this.redisProvider.client.get(profileKey);
+      if (profile) {
+        return dataParser(profile) as Profile;
+      }
+
       const data = await this.drizzleProvider.db.select({
         id: UserSchema.id,
         username: UserSchema.username,
@@ -93,6 +110,8 @@ export class UsersService {
         })
       };
 
+      await this.redisProvider.client.set(profileKey, JSON.stringify(data[0]), 'EX', 300); // 5 min
+
       return data[0] as Profile;
     } catch (error) {
       Logger.error(error)
@@ -105,6 +124,13 @@ export class UsersService {
   // for meta data
   async findUserPublicData(username: string): Promise<Profile | null> {
     try {
+      const profileKey = `profile:user:${username}:*`;
+
+      let profile = await this.redisProvider.client.get(profileKey);
+      if (profile) {
+        return dataParser(profile) as Profile;
+      }
+
       const data = await this.drizzleProvider.db.select({
         username: UserSchema.username,
         name: UserSchema.name,
@@ -131,13 +157,17 @@ export class UsersService {
         count: count()
       }).from(FriendshipSchema).where(eq(FriendshipSchema.authorUserId, data[0].id))
 
-      return {
+      const profileData = {
         ...data[0],
         followerCount: followerCount[0].count,
         followingCount: followingCount[0].count
-      }
+      };
+
+      await this.redisProvider.client.set(profileKey, JSON.stringify(profileData), 'EX', 300);
+
+      return profileData;
     } catch (error) {
-      return null
+      return null;
     }
   }
 

@@ -44,7 +44,7 @@ export class FileService {
       const outputDir = path.join(jobDir, 'output');
       const videoFilePath = path.join(jobDir, 'input.mp4');
       await fs.mkdir(jobDir, { recursive: true });
-      await fs.writeFile(videoFilePath, videoFile.buffer);
+      await fs.writeFile(videoFilePath, videoFile.buffer as any);
       await fs.mkdir(outputDir, { recursive: true });
 
       return await this.addJobToQueue(

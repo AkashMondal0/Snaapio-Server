@@ -39,8 +39,14 @@ export class Message {
   @Field(() => String, { nullable: true })
   content: string;
 
+  @Field(() => String, { nullable: true })
+  encryptedMessage?: string;
+
   @Field(() => GraphQLJSONObject, { nullable: true })
   members_e_key?: Record<string, string>;
+
+  @Field(() => GraphQLJSONObject, { nullable: true })
+  e_key?: Record<string, string>;
 
   @Field(() => String, { nullable: true })
   iv?: string;

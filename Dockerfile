@@ -2,7 +2,7 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 COPY package*.json ./
-RUN --mount=type=cache,target=/root/.npm npm install -f
+RUN --mount=type=cache,target=/root/.npm npm install --force
 COPY . .
 RUN npm run build
 

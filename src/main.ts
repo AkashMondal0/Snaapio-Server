@@ -10,6 +10,7 @@ import fastifyCookie from '@fastify/cookie';
 import multipart from '@fastify/multipart';
 import { Counter, Histogram, Gauge, register } from 'prom-client';
 import { logger } from './lib/grafana/logger';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 // Counter to track the total number of requests
 const requestCounter = new Counter({
@@ -97,6 +98,15 @@ async function bootstrap() {
     done();
   });
 
+  const config = new DocumentBuilder()
+    .setTitle('Snaapio API')
+    .setDescription('The Snaapio API description')
+    .setVersion('1.0')
+    .addTag('snaapio')
+    .build();
+  const documentFactory = () => SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, documentFactory);
+
 
   await app.listen(5000, "0.0.0.0");
   for (const key in envs) {
@@ -107,7 +117,7 @@ async function bootstrap() {
       Logger.log(`[ENV] ${key}: ${element} ✅`)
     }
   }
-  Logger.log(`Application is running on: ${await app.getUrl()}`)
+  Logger.log(`Application is running on: ${await app.getUrl()} ,  http://127.0.0.1:5000/api`);
 }
 
 bootstrap();

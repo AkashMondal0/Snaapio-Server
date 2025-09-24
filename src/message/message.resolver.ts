@@ -7,29 +7,39 @@ import { GraphQLPageQuery, TypingStatusInput } from 'src/lib/types/graphql.globa
 import { CreateMessageInput, CreateMessageInputSeen } from './dto/create-message.input';
 import { GqlAuthGuard } from 'src/auth/guard/Gql-auth.guard';
 import { UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
+import { GqlThrottlerGuard } from 'src/auth/guard/GqlThrottler.Guard';
 
 @Resolver(() => Message)
 export class MessageResolver {
   constructor(private readonly messageService: MessageService) { }
 
+  @Throttle({ default: { limit: 3, ttl: 1000 } })
+  @UseGuards(GqlThrottlerGuard)
   @UseGuards(GqlAuthGuard)
   @Mutation(() => Message)
   createMessage(@SessionUserGraphQl() user: Author, @Args('createMessageInput') createMessageInput: CreateMessageInput) {
     return this.messageService.create(user, createMessageInput);
   }
 
+  @Throttle({ default: { limit: 3, ttl: 1000 } })
+  @UseGuards(GqlThrottlerGuard)
   @UseGuards(GqlAuthGuard)
   @Mutation(() => Message)
   seenMessages(@SessionUserGraphQl() user: Author, @Args('createMessageInputSeen') createMessageInputSeen: CreateMessageInputSeen) {
     return this.messageService.seenMessages(user, createMessageInputSeen);
   }
 
+  @Throttle({ default: { limit: 3, ttl: 1000 } })
+  @UseGuards(GqlThrottlerGuard)
   @UseGuards(GqlAuthGuard)
   @Query(() => [Message], { name: 'findAllMessages' })
   findAllMessages(@SessionUserGraphQl() user: Author, @Args('graphQLPageQuery') graphQLPageQuery: GraphQLPageQuery) {
     return this.messageService.findAll(user, graphQLPageQuery);
   }
 
+  @Throttle({ default: { limit: 3, ttl: 1000 } })
+  @UseGuards(GqlThrottlerGuard)
   @UseGuards(GqlAuthGuard)
   @Query(() => String, { name: 'typingStatus' })
   typingStatus(@Args('typingStatusInput') typingStatus: TypingStatusInput) {

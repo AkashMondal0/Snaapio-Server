@@ -10,11 +10,14 @@ import { GraphQLPageQuery } from 'src/lib/types/graphql.global.entity';
 import { Author } from 'src/users/entities/author.entity';
 import { Comment } from './entities/comment.entity';
 import { NotificationService } from 'src/notification/notification.service';
+import { RedisProvider } from 'src/db/redis/redis.provider';
+import { dataParser } from 'src/lib/dataParser';
 
 @Injectable()
 export class CommentService {
   constructor(private readonly drizzleProvider: DrizzleProvider,
-    private readonly notificationService: NotificationService
+    private readonly notificationService: NotificationService,
+    private readonly redisProvider: RedisProvider
   ) { }
 
   async create(loggedUser: Author, createCommentInput: CreateCommentInput): Promise<Comment | GraphQLError> {
@@ -46,6 +49,11 @@ export class CommentService {
 
   async findAll(loggedUser: Author, findCommentInput: GraphQLPageQuery): Promise<Comment[] | GraphQLError> {
     try {
+      const cKey = `comments:${findCommentInput.id}:${findCommentInput.offset}`;
+      let cacheComment = await this.redisProvider.client.get(cKey);
+      if (cacheComment) {
+        return dataParser(cacheComment);
+      }
       const comments = await this.drizzleProvider.db.select({
         id: CommentSchema.id,
         postId: CommentSchema.postId,
@@ -67,7 +75,8 @@ export class CommentService {
         .limit(10)
         .offset(0)
 
-      return comments
+      await this.redisProvider.client.set(cKey, JSON.stringify(comments), "EX", 60 * 5); // Cache for 5 minutes
+      return comments;
 
     } catch (error) {
       Logger.error(error)
