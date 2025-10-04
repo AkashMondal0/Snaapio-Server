@@ -51,10 +51,13 @@ export class AuthService {
       bio: user.bio ?? "",
       website: user.website ?? [],
       profilePicture: user.profilePicture,
+      publicKey: user.publicKey,
     }
 
     const accessToken = await this.jwtService.signAsync(userinfo, { expiresIn: '30d' });
     // save session to redis
+    await this.redisProvider.client.set(`chat:user:${user.id}:privateKey`, user.privateKey);
+    await this.redisProvider.client.set(`user:${user.id}:publicKey`, user.publicKey);
 
     response.setCookie('sky.inc-token', accessToken, {
       path: "/",
@@ -96,8 +99,12 @@ export class AuthService {
       bio: "",
       website: [],
       profilePicture: newUser.profilePicture,
+      publicKey: newUser.publicKey,
     }
     const accessToken = await this.jwtService.signAsync(userinfo, { expiresIn: '30d' });
+
+    await this.redisProvider.client.set(`chat:user:${newUser.id}:privateKey`, newUser.privateKey);
+    await this.redisProvider.client.set(`user:${newUser.id}:publicKey`, newUser.publicKey);
     // save session to redis
 
     response.setCookie('sky.inc-token', accessToken, {

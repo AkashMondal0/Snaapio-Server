@@ -258,4 +258,19 @@ export class UsersService {
       });
     }
   }
+
+  async getSession(user: Author): Promise<Author | GraphQLError> {
+    try {
+      const pbKey = await this.redisProvider.client.get(`user:${user.id}:publicKey`);
+      if (pbKey) {
+        user.publicKey = pbKey;
+      }
+      return user;
+    } catch (error) {
+      Logger.error(error);
+      throw new GraphQLError('Internal Server Error', {
+        extensions: { code: 'INTERNAL_SERVER_ERROR' }
+      });
+    }
+  }
 }
