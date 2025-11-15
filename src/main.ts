@@ -11,6 +11,7 @@ import multipart from '@fastify/multipart';
 import { Counter, Histogram, Gauge, register } from 'prom-client';
 import { logger } from './lib/grafana/logger';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { RedisIoAdapter } from './db/redis/RedisIoAdapter';
 
 // Counter to track the total number of requests
 const requestCounter = new Counter({
@@ -71,6 +72,11 @@ async function bootstrap() {
   register.setDefaultLabels({
     app: 'snaapio-server',
   });
+
+  const redisIoAdapter = new RedisIoAdapter(app);
+  await redisIoAdapter.connectToRedis();
+
+  app.useWebSocketAdapter(redisIoAdapter);
 
   app.getHttpAdapter().getInstance().addHook('onResponse', (req, res, done) => {
     try {
