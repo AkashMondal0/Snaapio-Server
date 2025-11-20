@@ -53,7 +53,6 @@ export class UsersResolver {
   @UseGuards(GqlAuthGuard)
   @Query(() => Author, { name: 'getSession' })
   getSessionApi(@SessionUserGraphQl() user: Author) {
-    // console.log(user);
-    return user;
+    return this.usersService.getSession(user);
   }
 }

@@ -27,7 +27,7 @@ export class ConversationService {
       groupImage = "/user.jpg",
       members_e_key
     } = createConversationInput
-
+    
     // create group
     if (isGroup && memberIds.length >= 2) {
       const data = await this.drizzleProvider.db.insert(ConversationSchema).values({
@@ -76,11 +76,14 @@ export class ConversationService {
   }
 
   async findAll(user: Author, graphQLPageQuery: GraphQLPageQuery): Promise<Conversation[] | GraphQLError> {
-    if (!graphQLPageQuery?.privateKey) {
+    
+    const privateKey = await this.redisProvider.client.get(`chat:user:${user.id}:privateKey`);
+
+    if (!privateKey) {
       throw new GraphQLError("privateKey not found", {
         extensions: { code: 'KEY_NOT_FOUND' }
       })
-    };
+    }
 
     const convoKey = `chat:user:${user.id}:convos`;
     let convos = await this.redisProvider.client.get(convoKey);
@@ -144,7 +147,7 @@ export class ConversationService {
           con.lastMessage.content,
           con.lastMessage.e_key[user.id], // encryptedKey
           con.lastMessage.iv,
-          graphQLPageQuery.privateKey,
+          privateKey,
         ).toString() : "..."
       }
     })

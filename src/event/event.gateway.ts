@@ -20,50 +20,50 @@ const url = process.env.REDIS_URL;
     namespace: "chat"
 })
 @Injectable()
-export class EventGateway implements OnModuleInit {
+export class EventGateway {
     @WebSocketServer()
     server: Server;
     client: Redis;
-    sub: Redis;
+    // sub: Redis;
 
     async onModuleInit() {
         this.client = new Redis(url);
-        this.sub = new Redis(url);
+        // this.sub = new Redis(url);
 
-        try {
-            const redisSubscriber = this.sub;
-            await redisSubscriber.subscribe(
-                // message
-                event_name.conversation.message,
-                event_name.conversation.seen,
-                event_name.conversation.typing,
-                // notification
-                event_name.notification.post,
-                // call
-                event_name.webRtc.offer,
-                event_name.webRtc.answer,
-                event_name.webRtc.candidate,
-                event_name.webRtc.peerLeft,
-                event_name.webRtc.sendCall,
-                event_name.webRtc.answerCall,
-                event_name.webRtc.callAction,
-                "test",
-            );
+        // try {
+        //     const redisSubscriber = this.sub;
+        //     await redisSubscriber.subscribe(
+        //         // message
+        //         event_name.conversation.message,
+        //         event_name.conversation.seen,
+        //         event_name.conversation.typing,
+        //         // notification
+        //         event_name.notification.post,
+        //         // call
+        //         event_name.webRtc.offer,
+        //         event_name.webRtc.answer,
+        //         event_name.webRtc.candidate,
+        //         event_name.webRtc.peerLeft,
+        //         event_name.webRtc.sendCall,
+        //         event_name.webRtc.answerCall,
+        //         event_name.webRtc.callAction,
+        //         "test",
+        //     );
 
-            redisSubscriber.on("message", (channel, message) => {
-                const data = JSON.parse(message);
-                if (channel === "test") {
-                    console.log("From Server : Redis SUB :v1", channel);
-                    this.server.emit(channel, data);
-                    return;
-                }
-                this.server.to(data.members).emit(channel, data);
-            });
+        //     redisSubscriber.on("message", (channel, message) => {
+        //         const data = JSON.parse(message);
+        //         if (channel === "test") {
+        //             console.log("From Server : Redis SUB :v1", channel);
+        //             this.server.emit(channel, data);
+        //             return;
+        //         }
+        //         this.server.to(data.members).emit(channel, data);
+        //     });
 
-            Logger.log('Redis subscriber initialized successfully');
-        } catch (error) {
-            Logger.error('Redis subscriber initialization failed', error);
-        }
+        //     Logger.log('Redis subscriber initialized successfully');
+        // } catch (error) {
+        //     Logger.error('Redis subscriber initialization failed', error);
+        // }
     }
 
     extractUserIdAndName(client: Socket): { userId: string, username: string } | null {
@@ -80,8 +80,10 @@ export class EventGateway implements OnModuleInit {
     // new code
     async publishMessageToSocket(channel: string, data: any) {
         const ids = await this.getUserIdBySocketId(data.remoteId);
-        if (!ids) return;
-        this.client.publish(channel, JSON.stringify({ ...data, members: [ids] }));
+        if (ids && ids.length > 0) {
+            this.server.to(ids).emit(channel, data);
+        }
+        // this.client.publish(channel, JSON.stringify({ ...data, members: [ids] }));
     }
 
     async findUserBySocketId(userIds?: string[]): Promise<string[] | null> {
@@ -93,7 +95,8 @@ export class EventGateway implements OnModuleInit {
     async publishMessage(channel: string, data: any) {
         const ids = await this.findUserBySocketId(data.members);
         if (ids && ids.length > 0) {
-            this.client.publish(channel, JSON.stringify({ ...data, members: ids }));
+            // this.client.publish(channel, JSON.stringify({ ...data, members: ids }));
+            this.server.to(ids).emit(channel, data);
         }
     }
 

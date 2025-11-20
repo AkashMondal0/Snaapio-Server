@@ -30,7 +30,17 @@ export class MessageService {
     // private readonly kafkaProvider: KafkaService
   ) { }
   async findAll(user: Author, graphQLPageQuery: GraphQLPageQuery): Promise<Message[] | GraphQLError> {
-    if (!graphQLPageQuery?.privateKey) {
+
+
+    if (!graphQLPageQuery?.id) {
+      throw new GraphQLError("Conversation id is required", {
+        extensions: { code: 'CONVERSATION_ID_REQUIRED' }
+      })
+    }
+
+    const privateKey = await this.redisProvider.client.get(`chat:user:${user.id}:privateKey`);
+
+    if (!privateKey) {
       throw new GraphQLError("privateKey not found", {
         extensions: { code: 'KEY_NOT_FOUND' }
       })
@@ -38,6 +48,7 @@ export class MessageService {
 
     const cacheKey = `messages:${graphQLPageQuery.id}:${user.id}:${graphQLPageQuery.limit}:${graphQLPageQuery.offset}`;
     let messages = await this.redisProvider.client.get(cacheKey) as any;
+
 
     if (messages) {
       return dataParser(messages);
@@ -81,7 +92,7 @@ export class MessageService {
           m.content,
           m.e_key[user.id], // encryptedKey
           m.iv,
-          graphQLPageQuery.privateKey,
+          privateKey,
         ).toString()
       }
     });
